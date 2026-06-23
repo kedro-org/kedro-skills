@@ -37,7 +37,7 @@ Source = "https://github.com/kedro-org/kedro-skills"
 Tracker = "https://github.com/kedro-org/kedro-skills/issues"
 
 [project.entry-points."kedro.global_commands"]
-kedro-skills = "kedro_skills.cli:skills"
+kedro-skills = "kedro_skills.cli:commands"
 
 [project.optional-dependencies]
 dev = [
