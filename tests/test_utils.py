@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click
 import pytest
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 from kedro_skills.utils import find_project_root
 

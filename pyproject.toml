@@ -1,34 +1,54 @@
 [build-system]
-requires = ["hatchling"]
 build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+# Optional dev groups (works with uv; pip will ignore this section)
+[dependency-groups]
+dev = [
+  "ruff>=0.11.2",
+  "mypy>=1.12.1",
+  "pre-commit>=4.3.0",
+  "pytest>=8.0"
+]
 
 [project]
-name = "kedro-skills"
-version = "0.1.0"
-description = "Distribute AI coding skills to Kedro projects."
-readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.10"
-license = { text = "Apache Software License (Apache 2.0)" }
-authors = [{ name = "Kedro" }]
-keywords = [
-    "Kedro",
-    "AI",
-    "skills",
-    "AGENTS.md",
-    "data science",
-    "data engineering",
-]
+authors = [{name = "Kedro"}]
 classifiers = [
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14"
 ]
 dependencies = [
-    "click>=8.0",
-    "kedro>=0.19.0",
+  "click>=8.0",
+  "kedro>=0.19.0"
+]
+description = "Distribute AI coding skills to Kedro projects."
+keywords = [
+  "Kedro",
+  "AI",
+  "skills",
+  "AGENTS.md",
+  "data science",
+  "data engineering"
+]
+license = {text = "Apache Software License (Apache 2.0)"}
+name = "kedro-skills"
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">=3.10"
+version = "0.1.0"
+
+[project.entry-points."kedro.global_commands"]
+kedro-skills = "kedro_skills.cli:commands"
+
+[project.optional-dependencies]
+dev = [
+  "ruff>=0.11.2",
+  "mypy>=1.12.1",
+  "pre-commit>=4.3.0",
+  "pytest>=8.0"
 ]
 
 [project.urls]
@@ -36,63 +56,13 @@ Homepage = "https://github.com/kedro-org/kedro-skills"
 Source = "https://github.com/kedro-org/kedro-skills"
 Tracker = "https://github.com/kedro-org/kedro-skills/issues"
 
-[project.entry-points."kedro.global_commands"]
-kedro-skills = "kedro_skills.cli:commands"
-
-[project.optional-dependencies]
-dev = [
-    "ruff>=0.11.2",
-    "mypy>=1.12.1",
-    "pre-commit>=4.3.0",
-    "pytest>=8.0",
-]
-
-# Optional dev groups (works with uv; pip will ignore this section)
-[dependency-groups]
-dev = [
-    "ruff>=0.11.2",
-    "mypy>=1.12.1",
-    "pre-commit>=4.3.0",
-    "pytest>=8.0",
-]
-
 # ---- hatchling build config ----
+[tool.hatch]
 [tool.hatch.build.targets.sdist]
 include = ["/src/kedro_skills"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/kedro_skills"]
-
-# ---- Ruff ----
-[tool.ruff]
-line-length = 88
-show-fixes = true
-
-[tool.ruff.format]
-indent-style = "space"
-quote-style = "double"
-
-[tool.ruff.lint]
-select = [
-    "F",    # Pyflakes
-    "W",    # pycodestyle
-    "E",    # pycodestyle
-    "I",    # isort
-    "UP",   # pyupgrade
-    "PL",   # Pylint
-    "T201", # print statement
-    "S",    # flake8-bandit
-    "TCH",  # flake8-type-checking
-    "RUF",  # Ruff-specific rules
-]
-ignore = ["E501"]
-
-[tool.ruff.lint.isort]
-known-first-party = ["kedro_skills"]
-
-[tool.ruff.lint.per-file-ignores]
-"{tests,docs,tools,static,features}/*" = ["T201", "S101", "S108"]
-"{tests,docs}/*" = ["PLR2004", "PLR0913"]
 
 # ---- Mypy ----
 [tool.mypy]
@@ -105,6 +75,38 @@ warn_unreachable = true
 warn_unused_ignores = true
 
 # ---- Pytest ----
+[tool.pytest]
 [tool.pytest.ini_options]
-testpaths = ["tests"]
 addopts = "-v --tb=short"
+testpaths = ["tests"]
+
+# ---- Ruff ----
+[tool.ruff]
+line-length = 88
+show-fixes = true
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
+
+[tool.ruff.lint]
+ignore = ["E501"]
+select = [
+  "F",  # Pyflakes
+  "W",  # pycodestyle
+  "E",  # pycodestyle
+  "I",  # isort
+  "UP",  # pyupgrade
+  "PL",  # Pylint
+  "T201",  # print statement
+  "S",  # flake8-bandit
+  "TCH",  # flake8-type-checking
+  "RUF"  # Ruff-specific rules
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["kedro_skills"]
+
+[tool.ruff.lint.per-file-ignores]
+"{tests,docs,tools,static,features}/*" = ["T201", "S101", "S108"]
+"{tests,docs}/*" = ["PLR2004", "PLR0913"]

@@ -11,9 +11,9 @@ def find_project_root() -> Path:
     Wraps ``kedro.utils.find_kedro_project`` and raises a friendly
     ``click.UsageError`` when invoked outside a Kedro project.
     """
-    from kedro.utils import find_kedro_project
+    from kedro.utils import find_kedro_project  # noqa: PLC0415
 
-    project_path = find_kedro_project(Path.cwd())
+    project_path: Path | None = find_kedro_project(Path.cwd())
     if project_path is None:
         raise click.UsageError(
             "Not inside a Kedro project. "
