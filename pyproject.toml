@@ -2,7 +2,9 @@
 build-backend = "hatchling.build"
 requires = ["hatchling"]
 
-# Optional dev groups (works with uv; pip will ignore this section)
+# PEP 735 dependency groups (used by uv; pip ignores this section).
+# Mirrors [project.optional-dependencies].dev so `uv sync --group dev`
+# and `pip install -e ".[dev]"` both work.
 [dependency-groups]
 dev = [
   "ruff>=0.11.2",
