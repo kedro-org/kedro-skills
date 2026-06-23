@@ -24,3 +24,9 @@ kedro skills list
 ```bash
 pip install -e ".[dev]"
 ```
+
+Run all checks:
+
+```bash
+ruff check src/ tests/ && ruff format --check src/ tests/ && mypy src/ && pytest tests/ -v
+```
