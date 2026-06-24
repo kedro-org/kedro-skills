@@ -1,0 +1,52 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-yaml
+        args: ["--unsafe"]
+      - id: check-json
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        description: Linter for json, yaml, md, css and more
+        entry: prettier --write --ignore-unknown
+        language: node
+        types: [text]
+        additional_dependencies: ["prettier@3.3.3"]
+        exclude_types: [markdown, css]
+
+  - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+    rev: v2.15.0
+    hooks:
+      - id: pretty-format-toml
+        args: [--autofix]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.10
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.17.1
+    hooks:
+      - id: mypy
+        files: ^src/
+
+ci:
+  autoupdate_schedule: monthly
+  skip:
+    - check-added-large-files
+    - check-merge-conflict
+    - check-case-conflict
+    - check-yaml
+    - check-json
+    - mypy
