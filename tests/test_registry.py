@@ -12,21 +12,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-@pytest.fixture()
-def _patch_registry(tmp_path: Path):
-    """Patch ``importlib.resources.files`` so ``load_registry`` reads from *tmp_path*."""
-    yield tmp_path
-
-    def _make_patcher(registry_content: str):
-        registry_file = tmp_path / "registry.yaml"
-        registry_file.write_text(registry_content)
-
-        return patch(
-            "kedro_skills.registry.importlib.resources.files",
-            return_value=tmp_path,
-        )
-
-
 def _write_registry(tmp_path: Path, content: str):
     (tmp_path / "registry.yaml").write_text(content)
 
