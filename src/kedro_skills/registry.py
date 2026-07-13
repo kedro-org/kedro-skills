@@ -67,10 +67,11 @@ def load_registry() -> list[SkillMetadata]:
 
 def get_skill(skill_id: str) -> SkillMetadata:
     """Return metadata for *skill_id*, or raise ``KeyError``."""
-    for skill in load_registry():
+    skills = load_registry()
+    for skill in skills:
         if skill.id == skill_id:
             return skill
-    available = [s.id for s in load_registry()]
+    available = [s.id for s in skills]
     raise KeyError(
         f"Unknown skill {skill_id!r}. Available skills: {', '.join(available)}"
     )
