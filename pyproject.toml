@@ -10,7 +10,8 @@ dev = [
   "ruff>=0.11.2",
   "mypy>=1.12.1",
   "pre-commit>=4.3.0",
-  "pytest>=8.0"
+  "pytest>=8.0",
+  "types-PyYAML>=6.0"
 ]
 
 [project]
@@ -25,7 +26,8 @@ classifiers = [
 ]
 dependencies = [
   "click>=8.0",
-  "kedro>=0.19.0"
+  "kedro>=1.0",
+  "pyyaml>=6.0"
 ]
 description = "Distribute AI coding skills to Kedro projects."
 keywords = [
@@ -50,7 +52,8 @@ dev = [
   "ruff>=0.11.2",
   "mypy>=1.12.1",
   "pre-commit>=4.3.0",
-  "pytest>=8.0"
+  "pytest>=8.0",
+  "types-PyYAML>=6.0"
 ]
 
 [project.urls]
@@ -60,11 +63,16 @@ Tracker = "https://github.com/kedro-org/kedro-skills/issues"
 
 # ---- hatchling build config ----
 [tool.hatch]
+
 [tool.hatch.build.targets.sdist]
-include = ["/src/kedro_skills"]
+include = ["/src/kedro_skills", "/skills", "/registry.yaml"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/kedro_skills"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"registry.yaml" = "kedro_skills/registry.yaml"
+"skills" = "kedro_skills/skills"
 
 # ---- Mypy ----
 [tool.mypy]
@@ -78,6 +86,7 @@ warn_unused_ignores = true
 
 # ---- Pytest ----
 [tool.pytest]
+
 [tool.pytest.ini_options]
 addopts = "-v --tb=short"
 testpaths = ["tests"]

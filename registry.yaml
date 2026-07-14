@@ -1,0 +1,14 @@
+skills:
+  - id: catalog-config
+    category: data
+    description: >
+      Kedro data catalog configuration guidance. Helps write correct catalog
+      entries in conf/**/*.yml files.
+    paths:
+      - "conf/**/*.yml"
+      - "conf/**/*.yaml"
+    ide_support:
+      - cursor
+      - copilot
+      - claude
+      - codex
