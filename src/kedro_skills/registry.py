@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.resources
 from dataclasses import dataclass
+from pathlib import Path
 
 import yaml
 
@@ -45,14 +46,29 @@ def _validate_entry(entry: object, index: int) -> SkillMetadata:
     )
 
 
+def _resolve_registry_path() -> Path:
+    """Locate ``registry.yaml``, supporting both wheel and editable installs."""
+    pkg = importlib.resources.files("kedro_skills")
+    wheel_path = Path(str(pkg / "registry.yaml"))
+    if wheel_path.is_file():
+        return wheel_path
+
+    dev_path = Path(str(pkg)).parent.parent / "registry.yaml"
+    if dev_path.is_file():
+        return dev_path
+
+    raise FileNotFoundError(
+        f"Cannot locate registry.yaml. Searched:\n  {wheel_path}\n  {dev_path}"
+    )
+
+
 def load_registry() -> list[SkillMetadata]:
     """Load and validate every skill entry from the packaged ``registry.yaml``.
 
     Raises ``ValueError`` for malformed entries and ``FileNotFoundError``
     when the registry file is missing from the package.
     """
-    ref = importlib.resources.files("kedro_skills") / "registry.yaml"
-    raw = ref.read_text(encoding="utf-8")
+    raw = _resolve_registry_path().read_text(encoding="utf-8")
     data = yaml.safe_load(raw)
 
     if not isinstance(data, dict) or "skills" not in data:
