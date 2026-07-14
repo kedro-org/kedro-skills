@@ -1,3 +1,5 @@
+"""Skill registry: loads and validates skill metadata from ``registry.yaml``."""
+
 from __future__ import annotations
 
 import importlib.resources

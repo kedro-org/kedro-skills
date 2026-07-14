@@ -1,3 +1,5 @@
+"""Canonical writer: copies a packaged ``SKILL.md`` into a Kedro project."""
+
 from __future__ import annotations
 
 import hashlib

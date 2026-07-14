@@ -1,3 +1,5 @@
+"""Install-state tracking: read/write ``.installed.json`` and detect drift."""
+
 from __future__ import annotations
 
 import contextlib
