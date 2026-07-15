@@ -74,7 +74,12 @@ def read(project_root: Path) -> InstalledState:
     skills: dict[str, SkillState] = {}
     for skill_id, skill_data in raw.get("skills", {}).items():
         files = [
-            FileRecord(path=f["path"], sha256=f["sha256"])
+            FileRecord(
+                path=f["path"],
+                sha256=f["sha256"],
+                kind=f.get("kind", "managed_copy"),
+                block_id=f.get("block_id"),
+            )
             for f in skill_data.get("files", [])
         ]
         skills[skill_id] = SkillState(
