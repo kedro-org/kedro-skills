@@ -16,7 +16,11 @@ _PATHS_RE = re.compile(r"^paths:\s*$", re.MULTILINE)
 
 
 def _has_paths_frontmatter(text: str) -> bool:
-    """Return ``True`` if *text* contains a ``paths:`` key in YAML frontmatter."""
+    """Return ``True`` if *text* contains a ``paths:`` key in YAML frontmatter.
+
+    Only searches between the ``---`` delimiters, so a ``paths:`` string
+    appearing in the Markdown body does not produce a false positive.
+    """
     if not text.startswith("---"):
         return False
     end = text.find("---", 3)

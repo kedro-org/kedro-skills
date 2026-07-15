@@ -18,6 +18,15 @@ def render(skill: SkillMetadata, project_root: Path) -> list[FileRecord]:
     The file contains ``applyTo:`` frontmatter plus a body that references
     the canonical ``SKILL.md``.
 
+    Example output for ``catalog-config``::
+
+        ---
+        applyTo: conf/**/*.yml, conf/**/*.yaml
+        ---
+
+        When editing files matching these patterns, read
+        `.agents/skills/catalog-config/SKILL.md` and follow its guidelines.
+
     Returns a single-element list with a :class:`FileRecord` using
     ``kind="activation_wrapper"``.
     """

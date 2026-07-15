@@ -34,7 +34,19 @@ def _end_marker(skill_id: str) -> str:
 
 
 def _make_block(skill: SkillMetadata) -> str:
-    """Build the managed block for *skill* (markers inclusive)."""
+    """Build the managed block for *skill* (markers inclusive).
+
+    Example output for ``catalog-config``::
+
+        <!-- kedro-skills:catalog-config:start -->
+        ## Catalog config
+
+        Kedro data catalog configuration guidance
+
+        When editing files matching `conf/**/*.yml`, `conf/**/*.yaml`,
+        read [.agents/skills/catalog-config/SKILL.md](...) for detailed guidance.
+        <!-- kedro-skills:catalog-config:end -->
+    """
     heading = skill.id.replace("-", " ").replace("_", " ").capitalize()
     skill_path = f".agents/skills/{skill.id}/SKILL.md"
     paths_str = ", ".join(f"`{p}`" for p in skill.paths)
