@@ -87,7 +87,7 @@ class TestRender:
 
 class TestErrorCases:
     def test_error_when_canonical_missing(self, tmp_path: Path) -> None:
-        with pytest.raises(FileNotFoundError, match="Canonical SKILL.md not found"):
+        with pytest.raises(FileNotFoundError, match=r"Canonical SKILL\.md not found"):
             render(SKILL, tmp_path)
 
     def test_error_when_paths_frontmatter_missing(self, tmp_path: Path) -> None:
