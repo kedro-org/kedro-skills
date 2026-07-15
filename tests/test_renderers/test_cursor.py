@@ -64,6 +64,26 @@ class TestRender:
         assert "globs: conf/**/*.yml, conf/**/*.yaml" in content
 
 
+class TestMultilineDescription:
+    def test_description_is_single_line(self, tmp_path: Path) -> None:
+        skill = SkillMetadata(
+            id="catalog-config",
+            category="data",
+            description="Line one.\nLine two.\n  Extra spaces.",
+            paths=["conf/**/*.yml"],
+            ide_support=["cursor"],
+        )
+        render(skill, tmp_path)
+        content = (tmp_path / ".cursor/rules/catalog-config.mdc").read_text()
+        for line in content.splitlines():
+            if line.startswith("description:"):
+                assert "\n" not in line
+                assert "Line one. Line two. Extra spaces." in line
+                break
+        else:
+            raise AssertionError("description: line not found")
+
+
 class TestIdempotency:
     def test_render_twice_same_result(self, tmp_path: Path) -> None:
         r1 = render(SKILL, tmp_path)

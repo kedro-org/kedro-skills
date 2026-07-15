@@ -45,14 +45,12 @@ def render(skill: SkillMetadata, project_root: Path) -> list[FileRecord]:
             f"Run write_canonical() for {skill.id!r} first."
         )
 
-    content = canonical.read_text(encoding="utf-8")
-    if not _has_paths_frontmatter(content):
+    source_bytes = canonical.read_bytes()
+    if not _has_paths_frontmatter(source_bytes.decode("utf-8")):
         raise ValueError(
             f"Canonical SKILL.md for {skill.id!r} is missing 'paths:' "
             f"frontmatter, which Claude requires for glob activation."
         )
-
-    source_bytes = canonical.read_bytes()
 
     rel = f".claude/skills/{skill.id}/SKILL.md"
     dest = project_root / rel

@@ -26,7 +26,7 @@ def render(skill: SkillMetadata, project_root: Path) -> list[FileRecord]:
 
     content = (
         f"---\n"
-        f"description: {skill.description}\n"
+        f"description: {' '.join(skill.description.split())}\n"
         f"globs: {globs}\n"
         f"---\n"
         f"\n"

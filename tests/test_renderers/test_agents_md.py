@@ -116,6 +116,34 @@ class TestRenderExistingFileWithOutdatedBlock:
         assert "User-written content that must be preserved." in content
 
 
+SKILL_B = SkillMetadata(
+    id="pipeline-config",
+    category="pipelines",
+    description="Kedro pipeline configuration guidance",
+    paths=["src/**/*.py"],
+    ide_support=["cursor"],
+)
+
+
+class TestMultipleSkills:
+    def test_two_skills_coexist(self, tmp_path: Path) -> None:
+        render(SKILL, tmp_path)
+        render(SKILL_B, tmp_path)
+        content = (tmp_path / "AGENTS.md").read_text()
+        assert "<!-- kedro-skills:catalog-config:start -->" in content
+        assert "<!-- kedro-skills:catalog-config:end -->" in content
+        assert "<!-- kedro-skills:pipeline-config:start -->" in content
+        assert "<!-- kedro-skills:pipeline-config:end -->" in content
+
+    def test_updating_one_preserves_the_other(self, tmp_path: Path) -> None:
+        render(SKILL, tmp_path)
+        render(SKILL_B, tmp_path)
+        render(SKILL, tmp_path)
+        content = (tmp_path / "AGENTS.md").read_text()
+        assert content.count("<!-- kedro-skills:catalog-config:start -->") == 1
+        assert "<!-- kedro-skills:pipeline-config:start -->" in content
+
+
 class TestIdempotency:
     def test_render_twice_same_result(self, tmp_path: Path) -> None:
         r1 = render(SKILL, tmp_path)
