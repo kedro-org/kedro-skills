@@ -18,6 +18,8 @@ class FileRecord:
 
     path: str
     sha256: str
+    kind: str = "managed_copy"
+    block_id: str | None = None
 
 
 def compute_sha256(path: Path) -> str:
@@ -67,4 +69,4 @@ def write_canonical(skill: SkillMetadata, project_root: Path) -> FileRecord:
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(content)
 
-    return FileRecord(path=str(rel), sha256=compute_sha256(dest))
+    return FileRecord(path=str(rel), sha256=compute_sha256(dest), kind="managed_copy")
