@@ -30,7 +30,8 @@ class TestSkillsList:
         monkeypatch.chdir(kedro_project)
         result = CliRunner().invoke(skills, ["list"])
         assert result.exit_code == 0
-        assert "No skills installed." in result.output
+        assert "catalog-config" in result.output
+        assert "not installed" in result.output
 
     def test_list_outside_kedro_project(
         self, non_kedro_dir: Path, monkeypatch: pytest.MonkeyPatch
