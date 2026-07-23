@@ -20,7 +20,8 @@ pip install -e ".[dev]"
 ```bash
 # Inside a Kedro project:
 kedro skills list
-kedro skills install catalog-config
+kedro skills install catalog-config       # prompts for IDE selection
+kedro skills install catalog-config --ide cursor  # non-interactive
 kedro skills update
 kedro skills uninstall catalog-config
 ```
@@ -30,14 +31,16 @@ kedro skills uninstall catalog-config
 | Command | Description |
 |---------|-------------|
 | `kedro skills list` | Show available skills and their install status |
-| `kedro skills install <id>` | Install a skill into the current project |
-| `kedro skills install --all` | Install all available skills |
-| `kedro skills install --ide cursor,claude` | Install for specific IDEs only |
+| `kedro skills install <id>` | Install a skill (prompts for IDE selection) |
+| `kedro skills install <id> --ide cursor,claude` | Install for specific IDEs (no prompt) |
+| `kedro skills install --all` | Install all available skills for all IDEs |
 | `kedro skills install --force` | Overwrite even if files were modified |
 | `kedro skills update` | Re-install all installed skills (picks up new versions) |
 | `kedro skills update --force` | Overwrite modified files during update |
 | `kedro skills uninstall <id>` | Remove a skill from the project |
 | `kedro skills uninstall --force` | Remove even if files were modified |
+
+> **Tip:** For CI/scripts, always pass `--ide` or `--all` to avoid the interactive prompt.
 
 ### Manual testing
 
@@ -50,9 +53,13 @@ pip install kedro
 kedro new --name test-project -s spaceflights-pandas
 cd test-project
 
-# Install a skill and inspect the output
+# Install a skill (will prompt for IDE selection — press Enter for all)
 kedro skills list
 kedro skills install catalog-config
+# Expected prompt: "Available IDEs for 'catalog-config': cursor, copilot, claude"
+#                  "Install for which IDEs? [all]:"
+
+# Inspect the output
 ls .agents/skills/catalog-config/SKILL.md
 cat AGENTS.md
 ls .cursor/rules/
@@ -60,7 +67,7 @@ ls .github/instructions/
 ls .claude/skills/catalog-config/
 
 # Verify idempotency (no errors on re-run)
-kedro skills install catalog-config
+kedro skills install catalog-config --ide cursor,copilot,claude
 
 # Verify drift detection
 echo "modified" > .cursor/rules/catalog-config.mdc

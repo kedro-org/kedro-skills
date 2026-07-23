@@ -22,7 +22,7 @@ class TestInstallLifecycle:
     ) -> None:
         monkeypatch.chdir(kedro_project)
         runner = CliRunner()
-        result = runner.invoke(skills, ["install", "catalog-config"])
+        result = runner.invoke(skills, ["install", "catalog-config"], input="all\n")
         assert result.exit_code == 0, result.output
         assert "Installed" in result.output or "install" in result.output.lower()
 
@@ -40,7 +40,7 @@ class TestInstallLifecycle:
     ) -> None:
         monkeypatch.chdir(kedro_project)
         runner = CliRunner()
-        runner.invoke(skills, ["install", "catalog-config"])
+        runner.invoke(skills, ["install", "catalog-config"], input="all\n")
 
         result = runner.invoke(skills, ["list"])
         assert result.exit_code == 0
@@ -52,8 +52,8 @@ class TestInstallLifecycle:
     ) -> None:
         monkeypatch.chdir(kedro_project)
         runner = CliRunner()
-        runner.invoke(skills, ["install", "catalog-config"])
-        result = runner.invoke(skills, ["install", "catalog-config"])
+        runner.invoke(skills, ["install", "catalog-config"], input="all\n")
+        result = runner.invoke(skills, ["install", "catalog-config"], input="all\n")
         assert result.exit_code == 0
         assert "refused" not in result.output.lower()
 
@@ -62,7 +62,7 @@ class TestInstallLifecycle:
     ) -> None:
         monkeypatch.chdir(kedro_project)
         runner = CliRunner()
-        runner.invoke(skills, ["install", "catalog-config"])
+        runner.invoke(skills, ["install", "catalog-config"], input="all\n")
 
         cursor_rule = kedro_project / ".cursor/rules/catalog-config.mdc"
         cursor_rule.write_text("user edited content\n", encoding="utf-8")
@@ -77,7 +77,7 @@ class TestInstallLifecycle:
     ) -> None:
         monkeypatch.chdir(kedro_project)
         runner = CliRunner()
-        runner.invoke(skills, ["install", "catalog-config"])
+        runner.invoke(skills, ["install", "catalog-config"], input="all\n")
 
         cursor_rule = kedro_project / ".cursor/rules/catalog-config.mdc"
         cursor_rule.write_text("user edited content\n", encoding="utf-8")
@@ -91,7 +91,7 @@ class TestInstallLifecycle:
     ) -> None:
         monkeypatch.chdir(kedro_project)
         runner = CliRunner()
-        runner.invoke(skills, ["install", "catalog-config"])
+        runner.invoke(skills, ["install", "catalog-config"], input="all\n")
 
         agents_md = kedro_project / "AGENTS.md"
         content = agents_md.read_text(encoding="utf-8")
@@ -108,7 +108,7 @@ class TestInstallLifecycle:
     ) -> None:
         monkeypatch.chdir(kedro_project)
         runner = CliRunner()
-        runner.invoke(skills, ["install", "catalog-config"])
+        runner.invoke(skills, ["install", "catalog-config"], input="all\n")
         result = runner.invoke(skills, ["uninstall", "catalog-config"])
         assert result.exit_code == 0
 
@@ -126,7 +126,7 @@ class TestInstallLifecycle:
     ) -> None:
         monkeypatch.chdir(kedro_project)
         runner = CliRunner()
-        runner.invoke(skills, ["install", "catalog-config"])
+        runner.invoke(skills, ["install", "catalog-config"], input="all\n")
         runner.invoke(skills, ["uninstall", "catalog-config"])
 
         result = runner.invoke(skills, ["list"])

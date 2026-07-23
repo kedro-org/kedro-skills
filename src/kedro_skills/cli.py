@@ -62,6 +62,42 @@ def _parse_ides(ides_str: str | None) -> list[str] | None:
     return ides
 
 
+def _prompt_ide_selection(skill_id: str) -> list[str] | None:
+    """Interactively ask the user which IDEs to install for.
+
+    Returns None (meaning all) if the user accepts the default.
+    """
+    from kedro_skills.registry import get_skill  # noqa: PLC0415
+
+    try:
+        skill = get_skill(skill_id)
+    except KeyError:
+        return None
+
+    valid_ides = [
+        ide for ide in skill.ide_support if ide in {"cursor", "copilot", "claude"}
+    ]
+    if not valid_ides:
+        return None
+
+    options = ", ".join(valid_ides)
+    response = click.prompt(
+        f"Available IDEs for '{skill_id}': {options}\nInstall for which IDEs?",
+        default="all",
+    )
+
+    if response.strip().lower() == "all":
+        return None
+
+    selected = [i.strip() for i in response.split(",") if i.strip()]
+    invalid = set(selected) - set(valid_ides)
+    if invalid:
+        raise click.ClickException(
+            f"Unknown IDE(s): {', '.join(sorted(invalid))}. Valid options: {options}"
+        )
+    return selected
+
+
 @skills.command(name="install")
 @click.argument("skill_id", required=False)
 @click.option(
@@ -97,14 +133,15 @@ def install_cmd(
             )
             _print_result(result)
     elif skill_id:
+        if parsed_ides is None:
+            parsed_ides = _prompt_ide_selection(skill_id)
         try:
             result = install_skill(
                 skill_id, project_root, ides=parsed_ides, force=force
             )
         except KeyError as exc:
             raise click.ClickException(str(exc)) from exc
-        verbose = not install_all and ides is None
-        _print_result(result, verbose=verbose)
+        _print_result(result)
     else:
         raise click.UsageError("Provide a SKILL_ID or use --all.")
 
@@ -152,7 +189,7 @@ def _past_tense(operation: str) -> str:
     return mapping.get(operation, operation.capitalize() + "ed")
 
 
-def _print_result(result: object, *, verbose: bool = False) -> None:
+def _print_result(result: object) -> None:
     """Format and print an OperationResult."""
     from kedro_skills.orchestrator import OperationResult  # noqa: PLC0415
 
@@ -170,16 +207,7 @@ def _print_result(result: object, *, verbose: bool = False) -> None:
         click.echo("   Use --force to overwrite.")
     elif result.written:
         verb = _past_tense(result.operation)
-        if verbose:
-            click.echo(f"✓  {verb} '{result.skill_id}':")
-            for rec in result.written:
-                click.echo(f"     {rec.path}")
-            click.echo(
-                "\n   Tip: use --ide to install for specific IDEs only "
-                "(e.g. --ide cursor,claude)"
-            )
-        else:
-            click.echo(f"✓  {verb} '{result.skill_id}' ({len(result.written)} files)")
+        click.echo(f"✓  {verb} '{result.skill_id}' ({len(result.written)} files)")
     else:
         verb = _past_tense(result.operation)
         click.echo(f"✓  {verb} '{result.skill_id}'")

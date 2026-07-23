@@ -43,20 +43,29 @@ class TestSkillsList:
 
 
 class TestInstallOutput:
-    """Verify verbose vs concise install output."""
+    """Verify interactive prompt vs non-interactive install."""
 
-    def test_bare_install_shows_file_list_and_tip(
+    def test_bare_install_prompts_and_accepts_all(
         self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.chdir(kedro_project)
-        result = CliRunner().invoke(skills, ["install", "catalog-config"])
+        result = CliRunner().invoke(
+            skills, ["install", "catalog-config"], input="all\n"
+        )
         assert result.exit_code == 0
-        assert ".agents/skills/catalog-config/SKILL.md" in result.output
-        assert "AGENTS.md" in result.output
-        assert ".cursor/rules/catalog-config.mdc" in result.output
-        assert "--ide" in result.output
+        assert "5 files" in result.output
 
-    def test_install_with_ide_flag_is_concise(
+    def test_bare_install_prompts_and_selects_one(
+        self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(kedro_project)
+        result = CliRunner().invoke(
+            skills, ["install", "catalog-config"], input="cursor\n"
+        )
+        assert result.exit_code == 0
+        assert "3 files" in result.output
+
+    def test_install_with_ide_flag_skips_prompt(
         self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.chdir(kedro_project)
@@ -65,13 +74,13 @@ class TestInstallOutput:
         )
         assert result.exit_code == 0
         assert "3 files" in result.output
-        assert "--ide" not in result.output
+        assert "Available IDEs" not in result.output
 
-    def test_install_all_is_concise(
+    def test_install_all_skips_prompt(
         self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.chdir(kedro_project)
         result = CliRunner().invoke(skills, ["install", "--all"])
         assert result.exit_code == 0
         assert "5 files" in result.output
-        assert "--ide" not in result.output
+        assert "Available IDEs" not in result.output
