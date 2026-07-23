@@ -103,7 +103,8 @@ def install_cmd(
             )
         except KeyError as exc:
             raise click.ClickException(str(exc)) from exc
-        _print_result(result)
+        verbose = not install_all and ides is None
+        _print_result(result, verbose=verbose)
     else:
         raise click.UsageError("Provide a SKILL_ID or use --all.")
 
@@ -151,7 +152,7 @@ def _past_tense(operation: str) -> str:
     return mapping.get(operation, operation.capitalize() + "ed")
 
 
-def _print_result(result: object) -> None:
+def _print_result(result: object, *, verbose: bool = False) -> None:
     """Format and print an OperationResult."""
     from kedro_skills.orchestrator import OperationResult  # noqa: PLC0415
 
@@ -169,7 +170,16 @@ def _print_result(result: object) -> None:
         click.echo("   Use --force to overwrite.")
     elif result.written:
         verb = _past_tense(result.operation)
-        click.echo(f"✓  {verb} '{result.skill_id}' ({len(result.written)} files)")
+        if verbose:
+            click.echo(f"✓  {verb} '{result.skill_id}':")
+            for rec in result.written:
+                click.echo(f"     {rec.path}")
+            click.echo(
+                "\n   Tip: use --ide to install for specific IDEs only "
+                "(e.g. --ide cursor,claude)"
+            )
+        else:
+            click.echo(f"✓  {verb} '{result.skill_id}' ({len(result.written)} files)")
     else:
         verb = _past_tense(result.operation)
         click.echo(f"✓  {verb} '{result.skill_id}'")
