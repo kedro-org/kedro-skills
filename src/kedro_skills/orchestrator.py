@@ -29,8 +29,21 @@ _IDE_RENDERERS: dict[str, _RendererFn] = {
 
 _VALID_IDES = frozenset(_IDE_RENDERERS.keys())
 
-_BLOCK_START_RE = re.compile(r"<!-- kedro-skills:(.+?):start -->")
-_BLOCK_END_TEMPLATE = "<!-- kedro-skills:{block_id}:end -->"
+
+def _infer_ides_from_records(files: list[FileRecord]) -> list[str]:
+    """Infer which IDEs were installed based on file paths in the state."""
+    ides: list[str] = []
+    for rec in files:
+        if rec.path.startswith(".cursor/"):
+            if "cursor" not in ides:
+                ides.append("cursor")
+        elif rec.path.startswith(".github/instructions/"):
+            if "copilot" not in ides:
+                ides.append("copilot")
+        elif rec.path.startswith(".claude/"):
+            if "claude" not in ides:
+                ides.append("claude")
+    return ides
 
 
 @dataclass
@@ -210,7 +223,10 @@ def update_skills(project_root: Path, force: bool = False) -> list[OperationResu
                 )
             )
         else:
-            result = install_skill(skill_id, project_root, force=True)
+            installed_ides = _infer_ides_from_records(installed.skills[skill_id].files)
+            result = install_skill(
+                skill_id, project_root, ides=installed_ides or None, force=True
+            )
             results.append(
                 OperationResult(
                     skill_id=result.skill_id,
@@ -253,25 +269,21 @@ def uninstall_skill(
     for rec in skill_state.files:
         if rec.path in drifted_set:
             continue
-
-        abs_path = project_root / rec.path
-
-        if rec.kind == "agents_md_block" and rec.block_id:
-            _remove_agents_md_block(abs_path, rec.block_id)
-        else:
-            if abs_path.is_file():
-                abs_path.unlink()
-            _cleanup_empty_parents(abs_path.parent, project_root)
-
+        _remove_file_record(rec, project_root)
         written.append(rec)
 
-    del installed.skills[skill_id]
-
-    if installed.skills:
+    if refused:
+        remaining = [rec for rec in skill_state.files if rec.path in drifted_set]
+        installed.skills[skill_id] = SkillState(
+            version=skill_state.version, files=remaining
+        )
         state.write(project_root, installed)
     else:
+        del installed.skills[skill_id]
         state_path = project_root / state.STATE_FILENAME
-        if state_path.is_file():
+        if installed.skills:
+            state.write(project_root, installed)
+        elif state_path.is_file():
             state_path.unlink()
 
     return OperationResult(
@@ -284,6 +296,18 @@ def uninstall_skill(
 
 
 _WELL_KNOWN_ROOTS = frozenset([".cursor", ".github", ".claude", ".agents"])
+
+
+def _remove_file_record(rec: FileRecord, project_root: Path) -> None:
+    """Remove a single managed file or AGENTS.md block."""
+    abs_path = project_root / rec.path
+    if rec.kind == "agents_md_block" and rec.block_id:
+        _remove_agents_md_block(abs_path, rec.block_id)
+    elif abs_path.is_file():
+        abs_path.unlink()
+        _cleanup_empty_parents(abs_path.parent, project_root)
+    else:
+        _cleanup_empty_parents(abs_path.parent, project_root)
 
 
 def _cleanup_empty_parents(directory: Path, project_root: Path) -> None:

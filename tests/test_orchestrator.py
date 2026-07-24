@@ -170,3 +170,49 @@ class TestErrorHandling:
         result = runner.invoke(skills, ["install", "nonexistent-skill"])
         assert result.exit_code != 0
         assert "Unknown skill" in result.output or "nonexistent-skill" in result.output
+
+
+class TestUpdatePreservesIdes:
+    def test_update_does_not_expand_ides(
+        self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Update should re-install only the originally selected IDEs."""
+        monkeypatch.chdir(kedro_project)
+        runner = CliRunner()
+        runner.invoke(skills, ["install", "catalog-config", "--ide", "cursor"])
+
+        assert (kedro_project / ".cursor/rules/catalog-config.mdc").is_file()
+        assert not (
+            kedro_project / ".github/instructions/catalog-config.instructions.md"
+        ).is_file()
+
+        result = runner.invoke(skills, ["update"])
+        assert result.exit_code == 0
+
+        assert (kedro_project / ".cursor/rules/catalog-config.mdc").is_file()
+        assert not (
+            kedro_project / ".github/instructions/catalog-config.instructions.md"
+        ).is_file()
+        assert not (kedro_project / ".claude/skills/catalog-config/SKILL.md").is_file()
+
+
+class TestPartialUninstall:
+    def test_uninstall_drift_keeps_skill_in_state(
+        self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """If files are drifted and --force is not used, skill stays in state."""
+        monkeypatch.chdir(kedro_project)
+        runner = CliRunner()
+        runner.invoke(skills, ["install", "catalog-config"], input="all\n")
+
+        cursor_file = kedro_project / ".cursor/rules/catalog-config.mdc"
+        cursor_file.write_text("user modified content", encoding="utf-8")
+
+        result = runner.invoke(skills, ["uninstall", "catalog-config"])
+        assert result.exit_code == 0
+        assert "refused" in result.output or "modified" in result.output
+
+        from kedro_skills.state import read  # noqa: PLC0415
+
+        installed = read(kedro_project)
+        assert "catalog-config" in installed.skills
