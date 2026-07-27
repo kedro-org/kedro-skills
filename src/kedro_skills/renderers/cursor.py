@@ -16,17 +16,8 @@ def render(skill: SkillMetadata, project_root: Path) -> list[FileRecord]:
     """Write a ``.cursor/rules/<id>.mdc`` file for *skill*.
 
     The file contains ``description:`` and ``globs:`` frontmatter plus a
-    body that references the canonical ``SKILL.md``.
-
-    Example output for ``catalog-config``::
-
-        ---
-        description: Kedro data catalog configuration guidance
-        globs: conf/**/*.yml, conf/**/*.yaml
-        ---
-
-        When editing files matching these patterns, read
-        `.agents/skills/catalog-config/SKILL.md` and follow its guidelines.
+    body that forcefully instructs the agent to read the canonical
+    ``SKILL.md`` before answering.
 
     Returns a single-element list with a :class:`FileRecord` using
     ``kind="activation_wrapper"``.
@@ -40,8 +31,10 @@ def render(skill: SkillMetadata, project_root: Path) -> list[FileRecord]:
         f"globs: {globs}\n"
         f"---\n"
         f"\n"
-        f"When editing files matching these patterns, "
-        f"read `{skill_path}` and follow its guidelines.\n"
+        f"IMPORTANT: Do NOT answer from internal knowledge about Kedro datasets or catalog configuration.\n"
+        f"You MUST read the file `{skill_path}` BEFORE writing or suggesting any catalog entry, dataset type, or configuration.\n"
+        f"Your training data about Kedro datasets is likely outdated — the referenced file contains the current, verified guidance.\n"
+        f"If you cannot read the file, tell the user you need access to it.\n"
     )
 
     rel = f".cursor/rules/{skill.id}.mdc"

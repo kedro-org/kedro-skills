@@ -43,11 +43,39 @@ Do not guess dataset types or constructor arguments from training data — they 
 
 **Step 1** — Get the installed version:
 
+Your shell does not necessarily use the environment the user has activated in their own terminal — it often starts in the base or system interpreter. Never report a version without first confirming which interpreter produced it.
+
+**1a.** Report the version *and* the interpreter path together, so you can judge whether to trust it:
+
 ```bash
-pip show kedro-datasets
+python -c "import sys, kedro_datasets as k; print(k.__version__, sys.executable)"
 ```
 
-If not installed, fall back to `stable` in the URL below.
+Trust the result only if the path sits inside an environment — it contains `/envs/`, `/.venv/`, or `/virtualenvs/`. A path like `/usr/bin/python`, `.../miniconda3/bin/python`, or `.../anaconda3/bin/python` is the base interpreter: treat it as unusable even if the import succeeded, because the version it reports is probably not the project's.
+
+**1b.** If the import failed or the path is a base interpreter, list the candidate environments:
+
+```bash
+conda env list 2>/dev/null
+ls -d .venv venv 2>/dev/null
+poetry env info --path 2>/dev/null
+```
+
+**1c.** Re-run the version check against a candidate using its interpreter directly. Do not use `conda activate` — it does not persist in a non-interactive shell:
+
+```bash
+<env-path>/bin/python -c "import kedro_datasets; print(kedro_datasets.__version__)"
+```
+
+Or, for a named conda environment:
+
+```bash
+conda run -n <env-name> python -c "import kedro_datasets; print(kedro_datasets.__version__)"
+```
+
+**1d.** If several candidates exist and none is clearly the project's, ask the user which environment to use and show them the candidates you found. Do not pick one silently.
+
+If no environment yields a version, fall back to a pinned `kedro-datasets` version in `requirements.txt` or `pyproject.toml`, and only then to `stable` in the URLs below.
 
 **Step 2** — Verify the dataset type exists by fetching its docs page:
 

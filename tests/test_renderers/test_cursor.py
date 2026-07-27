@@ -25,7 +25,10 @@ description: Kedro data catalog configuration guidance
 globs: conf/**/*.yml, conf/**/*.yaml
 ---
 
-When editing files matching these patterns, read `.agents/skills/catalog-config/SKILL.md` and follow its guidelines.
+IMPORTANT: Do NOT answer from internal knowledge about Kedro datasets or catalog configuration.
+You MUST read the file `.agents/skills/catalog-config/SKILL.md` BEFORE writing or suggesting any catalog entry, dataset type, or configuration.
+Your training data about Kedro datasets is likely outdated — the referenced file contains the current, verified guidance.
+If you cannot read the file, tell the user you need access to it.
 """
 
 
