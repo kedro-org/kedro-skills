@@ -69,6 +69,8 @@ If the page returns a 404 or the type is not found, **do not use it** — tell t
 https://docs.kedro.org/projects/kedro-datasets/en/kedro-datasets-{version}/api/kedro_datasets/
 ```
 
+**If you do not have web/tool access to fetch URLs**, do NOT guess dataset types from memory. Tell the user: "I cannot verify this dataset type exists in your installed version. Please check the available types at `https://docs.kedro.org/projects/kedro-datasets/en/kedro-datasets-<version>/api/kedro_datasets/` before using it."
+
 **Step 3** — Read the constructor parameters from the docs page, then write the catalog entry using only documented arguments.
 
 ## Dependencies
@@ -104,7 +106,7 @@ my_dataset:
     index: false
 ```
 
-The valid keys depend on the dataset type and its underlying library — check the docs for the installed version rather than guessing.
+The valid keys depend on the dataset type and its underlying library — follow the same doc-lookup workflow (Step 2 above) and read the constructor parameters rather than guessing.
 
 ## Factory patterns
 
@@ -112,7 +114,7 @@ Use the `"{name}"` placeholder to create a single entry that matches multiple da
 
 ```yaml
 "{my_pattern}":
-  type: kedro_datasets.pandas.CSVDataset
+  type: pandas.CSVDataset
   filepath: data/01_raw/{my_pattern}.csv
 ```
 
