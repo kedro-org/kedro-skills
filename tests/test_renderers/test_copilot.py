@@ -21,10 +21,14 @@ SKILL = SkillMetadata(
 
 EXPECTED_CONTENT = """\
 ---
+description: Kedro data catalog configuration guidance
 applyTo: conf/**/*.yml, conf/**/*.yaml
 ---
 
-When editing files matching these patterns, read `.agents/skills/catalog-config/SKILL.md` and follow its guidelines.
+IMPORTANT: When working on files matching `conf/**/*.yml`, `conf/**/*.yaml`, do NOT answer from internal knowledge.
+You MUST read `.agents/skills/catalog-config/SKILL.md` BEFORE writing, editing, or suggesting changes to them.
+Your training data is likely outdated — that file holds the current, verified guidance.
+If you cannot read the file, tell the user instead of guessing.
 """
 
 
@@ -67,6 +71,28 @@ class TestRender:
             tmp_path / ".github/instructions/catalog-config.instructions.md"
         ).read_text()
         assert "applyTo: conf/**/*.yml, conf/**/*.yaml" in content
+
+
+class TestMultilineDescription:
+    def test_description_is_single_line(self, tmp_path: Path) -> None:
+        skill = SkillMetadata(
+            id="catalog-config",
+            category="data",
+            description="Line one.\nLine two.\n  Extra spaces.",
+            paths=["conf/**/*.yml"],
+            ide_support=["copilot"],
+        )
+        render(skill, tmp_path)
+        content = (
+            tmp_path / ".github/instructions/catalog-config.instructions.md"
+        ).read_text()
+        for line in content.splitlines():
+            if line.startswith("description:"):
+                assert "\n" not in line
+                assert "Line one. Line two. Extra spaces." in line
+                break
+        else:
+            raise AssertionError("description: line not found")
 
 
 class TestIdempotency:

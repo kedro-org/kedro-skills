@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from kedro_skills.installer import FileRecord, compute_sha256
+from kedro_skills.renderers._pointer import pointer_body
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -23,7 +24,6 @@ def render(skill: SkillMetadata, project_root: Path) -> list[FileRecord]:
     ``kind="activation_wrapper"``.
     """
     globs = ", ".join(skill.paths)
-    skill_path = f".agents/skills/{skill.id}/SKILL.md"
 
     content = (
         f"---\n"
@@ -31,10 +31,7 @@ def render(skill: SkillMetadata, project_root: Path) -> list[FileRecord]:
         f"globs: {globs}\n"
         f"---\n"
         f"\n"
-        f"IMPORTANT: Do NOT answer from internal knowledge about Kedro datasets or catalog configuration.\n"
-        f"You MUST read the file `{skill_path}` BEFORE writing or suggesting any catalog entry, dataset type, or configuration.\n"
-        f"Your training data about Kedro datasets is likely outdated — the referenced file contains the current, verified guidance.\n"
-        f"If you cannot read the file, tell the user you need access to it.\n"
+        f"{pointer_body(skill.id, skill.paths)}"
     )
 
     rel = f".cursor/rules/{skill.id}.mdc"

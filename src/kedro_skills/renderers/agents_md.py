@@ -7,6 +7,7 @@ import re
 from typing import TYPE_CHECKING
 
 from kedro_skills.installer import FileRecord
+from kedro_skills.renderers._pointer import pointer_body
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -34,22 +35,8 @@ def _end_marker(skill_id: str) -> str:
 
 
 def _make_block(skill: SkillMetadata) -> str:
-    """Build the managed block for *skill* (markers inclusive).
-
-    Example output for ``catalog-config``::
-
-        <!-- kedro-skills:catalog-config:start -->
-        ## Catalog config
-
-        Kedro data catalog configuration guidance
-
-        When editing files matching `conf/**/*.yml`, `conf/**/*.yaml`,
-        read [.agents/skills/catalog-config/SKILL.md](...) for detailed guidance.
-        <!-- kedro-skills:catalog-config:end -->
-    """
+    """Build the managed block for *skill* (markers inclusive)."""
     heading = skill.id.replace("-", " ").replace("_", " ").capitalize()
-    skill_path = f".agents/skills/{skill.id}/SKILL.md"
-    paths_str = ", ".join(f"`{p}`" for p in skill.paths)
 
     return (
         f"{_start_marker(skill.id)}\n"
@@ -57,8 +44,7 @@ def _make_block(skill: SkillMetadata) -> str:
         f"\n"
         f"{skill.description}\n"
         f"\n"
-        f"When editing files matching {paths_str}, "
-        f"read [{skill_path}]({skill_path}) for detailed guidance.\n"
+        f"{pointer_body(skill.id, skill.paths)}"
         f"{_end_marker(skill.id)}"
     )
 
