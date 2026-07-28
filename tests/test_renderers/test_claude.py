@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from kedro_skills.installer import FileRecord, compute_sha256
+from kedro_skills.installer import FileRecord, _resolve_skill_path, compute_sha256
 from kedro_skills.registry import SkillMetadata
 from kedro_skills.renderers.claude import render
 
@@ -26,25 +26,11 @@ VALID_SKILL_MD = """\
 name: catalog-config
 description: >
   Kedro data catalog configuration guidance.
-paths:
-  - "conf/**/*.yml"
-  - "conf/**/*.yaml"
 ---
 
 # Catalog Configuration
 
 Help the user write correct Kedro data catalog entries.
-"""
-
-NO_PATHS_SKILL_MD = """\
----
-name: catalog-config
-description: Kedro data catalog configuration guidance.
----
-
-# Catalog Configuration
-
-Missing the paths frontmatter.
 """
 
 
@@ -90,10 +76,16 @@ class TestErrorCases:
         with pytest.raises(FileNotFoundError, match=r"Canonical SKILL\.md not found"):
             render(SKILL, tmp_path)
 
-    def test_error_when_paths_frontmatter_missing(self, tmp_path: Path) -> None:
-        _write_canonical(tmp_path, NO_PATHS_SKILL_MD)
-        with pytest.raises(ValueError, match="missing 'paths:' frontmatter"):
-            render(SKILL, tmp_path)
+
+class TestPackagedSkillHasNoPaths:
+    """A ``paths:`` key withholds the skill from the listing Claude receives,
+    so the guidance never surfaces until a matching file has been read."""
+
+    def test_shipped_skill_omits_paths_frontmatter(self) -> None:
+        text = _resolve_skill_path("catalog-config").read_text(encoding="utf-8")
+        end = text.index("---", 3)
+        frontmatter = text[:end]
+        assert "paths:" not in frontmatter
 
 
 class TestIdempotency:
