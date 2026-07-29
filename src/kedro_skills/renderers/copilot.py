@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from kedro_skills.installer import FileRecord, compute_sha256
+from kedro_skills.renderers._pointer import pointer_body
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -15,31 +16,23 @@ if TYPE_CHECKING:
 def render(skill: SkillMetadata, project_root: Path) -> list[FileRecord]:
     """Write a ``.github/instructions/<id>.instructions.md`` file for *skill*.
 
-    The file contains ``applyTo:`` frontmatter plus a body that references
-    the canonical ``SKILL.md``.
-
-    Example output for ``catalog-config``::
-
-        ---
-        applyTo: conf/**/*.yml, conf/**/*.yaml
-        ---
-
-        When editing files matching these patterns, read
-        `.agents/skills/catalog-config/SKILL.md` and follow its guidelines.
+    The file contains ``description:`` and ``applyTo:`` frontmatter plus a body
+    that instructs the agent to read the canonical ``SKILL.md`` before
+    answering.  ``description`` is what drives Copilot's task-relevance
+    matching when no ``applyTo`` glob is in context, so it is not optional.
 
     Returns a single-element list with a :class:`FileRecord` using
     ``kind="activation_wrapper"``.
     """
     apply_to = ", ".join(skill.paths)
-    skill_path = f".agents/skills/{skill.id}/SKILL.md"
 
     content = (
         f"---\n"
+        f"description: {' '.join(skill.description.split())}\n"
         f"applyTo: {apply_to}\n"
         f"---\n"
         f"\n"
-        f"When editing files matching these patterns, "
-        f"read `{skill_path}` and follow its guidelines.\n"
+        f"{pointer_body(skill.id, skill.paths)}"
     )
 
     rel = f".github/instructions/{skill.id}.instructions.md"

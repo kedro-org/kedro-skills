@@ -4,9 +4,6 @@ description: >-
   Kedro catalog configuration guidance for conf/**/*.yml files. Use when adding
   datasets, editing catalog entries, setting up factories, or working with
   credentials and parameter interpolation.
-paths:
-  - "conf/**/*.yml"
-  - "conf/**/*.yaml"
 ---
 # Catalog Configuration
 
@@ -37,17 +34,47 @@ Three things agents get wrong:
 
 ## Check the docs before writing an entry
 
-Do not guess constructor arguments from training data — they change across versions. You MUST look up the dataset type docs before writing the catalog entry.
+Do not guess dataset types or constructor arguments from training data — they change across versions and your knowledge may be outdated. You MUST verify the dataset type exists and look up its docs before writing the catalog entry.
+
+**CRITICAL: Never suggest a dataset type without verifying it exists in the installed version. If you cannot confirm it exists via the steps below, say so explicitly rather than guessing.**
 
 **Step 1** — Get the installed version:
 
+Your shell does not necessarily use the environment the user has activated in their own terminal — it often starts in the base or system interpreter. Never report a version without first confirming which interpreter produced it.
+
+**1a.** Report the version *and* the interpreter path together, so you can judge whether to trust it:
+
 ```bash
-pip show kedro-datasets
+python -c "import sys, kedro_datasets as k; print(k.__version__, sys.executable)"
 ```
 
-If not installed, fall back to `stable` in the URL below.
+Trust the result only if the path sits inside an environment — it contains `/envs/`, `/.venv/`, or `/virtualenvs/`. A path like `/usr/bin/python`, `.../miniconda3/bin/python`, or `.../anaconda3/bin/python` is the base interpreter: treat it as unusable even if the import succeeded, because the version it reports is probably not the project's.
 
-**Step 2** — Fetch the docs page for the specific dataset type:
+**1b.** If the import failed or the path is a base interpreter, list the candidate environments:
+
+```bash
+conda env list 2>/dev/null
+ls -d .venv venv 2>/dev/null
+poetry env info --path 2>/dev/null
+```
+
+**1c.** Re-run the version check against a candidate using its interpreter directly. Do not use `conda activate` — it does not persist in a non-interactive shell:
+
+```bash
+<env-path>/bin/python -c "import kedro_datasets; print(kedro_datasets.__version__)"
+```
+
+Or, for a named conda environment:
+
+```bash
+conda run -n <env-name> python -c "import kedro_datasets; print(kedro_datasets.__version__)"
+```
+
+**1d.** If several candidates exist and none is clearly the project's, ask the user which environment to use and show them the candidates you found. Do not pick one silently.
+
+If no environment yields a version, fall back to a pinned `kedro-datasets` version in `requirements.txt` or `pyproject.toml`, and only then to `stable` in the URLs below.
+
+**Step 2** — Verify the dataset type exists by fetching its docs page:
 
 ```
 https://docs.kedro.org/projects/kedro-datasets/en/kedro-datasets-{version}/api/kedro_datasets/{module}.{ClassName}/
@@ -61,20 +88,30 @@ https://docs.kedro.org/projects/kedro-datasets/en/kedro-datasets-{version}/api/k
 
 Replace `{version}` with the installed version (e.g. `9.3.0`) or `stable`. Replace `{module}.{ClassName}` with the dataset type (e.g. `pandas.CSVDataset`, `polars.PolarsDatabaseDataset`).
 
+If the page returns a 404 or the type is not found, **do not use it** — tell the user the type does not exist and suggest alternatives from the available types index:
+
+```
+https://docs.kedro.org/projects/kedro-datasets/en/kedro-datasets-{version}/api/kedro_datasets/
+```
+
+**If you do not have web/tool access to fetch URLs**, do NOT guess dataset types from memory. Tell the user: "I cannot verify this dataset type exists in your installed version. Please check the available types at `https://docs.kedro.org/projects/kedro-datasets/en/kedro-datasets-<version>/api/kedro_datasets/` before using it."
+
 **Step 3** — Read the constructor parameters from the docs page, then write the catalog entry using only documented arguments.
 
 ## Dependencies
 
-When adding a dataset, ensure the required package is in `requirements.txt` (or `pyproject.toml`). Dataset types are shipped as extras of `kedro-datasets`:
+When adding a dataset, ensure the required package is in `requirements.txt` (or `pyproject.toml`). Dataset types are shipped as extras of `kedro-datasets` using lowercase, hyphen-separated names:
 
 ```
-kedro-datasets[pandas.CSVDataset]
+kedro-datasets[pandas-csvdataset]
 ```
+
+The extra name is the module and class joined by a hyphen, all lowercase (e.g. `pandas.CSVDataset` → `pandas-csvdataset`, `spark.SparkDataset` → `spark-sparkdataset`).
 
 For experimental types, the package is `kedro-datasets-experimental`:
 
 ```
-kedro-datasets-experimental[polars.PolarsDatabaseDataset]
+kedro-datasets-experimental[polars-polarsdatabasedataset]
 ```
 
 Suggest updating requirements when adding a new dataset type.
@@ -94,7 +131,7 @@ my_dataset:
     index: false
 ```
 
-The valid keys depend on the dataset type and its underlying library — check the docs for the installed version rather than guessing.
+The valid keys depend on the dataset type and its underlying library — follow the same doc-lookup workflow (Step 2 above) and read the constructor parameters rather than guessing.
 
 ## Factory patterns
 
@@ -102,11 +139,31 @@ Use the `"{name}"` placeholder to create a single entry that matches multiple da
 
 ```yaml
 "{my_pattern}":
-  type: kedro_datasets.pandas.CSVDataset
+  type: pandas.CSVDataset
   filepath: data/01_raw/{my_pattern}.csv
 ```
 
-The placeholder inside the quotes becomes a wildcard matched at runtime. For advanced patterns (multiple placeholders, specificity ordering, partial matches), refer to: https://docs.kedro.org/en/stable/catalog-data/kedro_dataset_factories/
+The placeholder inside the quotes becomes a wildcard matched at runtime.
+
+**Resolution order is by specificity, not file position.** When multiple factory patterns could match a dataset name, Kedro picks the most specific match (fewest wildcards, longest literal prefix). Position in the YAML file does NOT affect priority. For example:
+
+```yaml
+# More specific — matches only datasets starting with "report_"
+"report_{name}":
+  type: pandas.CSVDataset
+  filepath: data/08_reporting/report_{name}.csv
+
+# Less specific — catches everything else
+"{catch_all}":
+  type: pandas.CSVDataset
+  filepath: data/01_raw/{catch_all}.csv
+```
+
+Both can coexist regardless of order in the file. A dataset named `report_summary` matches the first pattern because it is more specific.
+
+When collapsing multiple explicit entries into a factory, ensure the factory pattern is specific enough to match only the intended datasets. Do not create overly broad patterns (like bare `"{name}"`) that would accidentally match unrelated datasets already defined elsewhere in the catalog.
+
+For advanced patterns (multiple placeholders, specificity ordering, partial matches), refer to: https://docs.kedro.org/en/stable/catalog-data/kedro_dataset_factories/
 
 ## Data directory structure
 

@@ -42,6 +42,23 @@ kedro skills uninstall catalog-config
 
 > **Tip:** For CI/scripts, always pass `--ide` or `--all` to avoid the interactive prompt.
 
+### Claude Code and `AGENTS.md`
+
+Claude Code reads `CLAUDE.md`, not `AGENTS.md`. Installing for `claude` writes
+`.claude/skills/<id>/SKILL.md`, which Claude discovers on its own, so no extra
+setup is needed for the skills themselves.
+
+If you also want the rest of your project's `AGENTS.md` in Claude's session
+context, import it from a `CLAUDE.md` you own:
+
+```markdown
+@AGENTS.md
+```
+
+Prefer the import over `ln -s AGENTS.md CLAUDE.md`: symlinks need Administrator
+privileges or Developer Mode on Windows, and Git checkouts with
+`core.symlinks=false` turn them into a plain file containing the target path.
+
 ### Manual testing
 
 ```bash
