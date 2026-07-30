@@ -57,6 +57,9 @@ editing matching files, not on every prompt.
 
 ## How to author a new skill
 
+Before creating a new skill, run `kedro skills list` to check it doesn't overlap
+with an existing one.
+
 1. Create `skills/<id>/SKILL.md` with Agent Skills frontmatter:
    ```yaml
    ---
@@ -96,7 +99,7 @@ See the [Agent Skills standard](https://agentskills.io/) for the full spec.
 - **Codex CLI:** Reads `AGENTS.md` natively. Skill block is always active.
 
 <details>
-<summary>Manual testing walkthrough</summary>
+<summary>How to try it out</summary>
 
 ```bash
 # Install kedro-skills from source (in the kedro-skills repo root)
