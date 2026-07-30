@@ -55,19 +55,6 @@ editing matching files, not on every prompt.
 | `kedro skills uninstall <id>` | Remove a skill and all its managed files |
 | `kedro skills uninstall --force` | Remove even if files were hand-edited |
 
-## Skills vs MCP
-
-> **If the answer is "tell the agent something" → `kedro-skills`.**
-> **If the answer is "let the agent do something" → `kedro-mcp`.**
-
-| | `kedro-skills` | `kedro-mcp` |
-|---|---|---|
-| Layer | Instruction (what the agent *knows*) | Integration (what the agent can *do*) |
-| Runtime | None — files on disk | Long-running MCP server |
-| IDE reach | All assistants | MCP-capable clients only |
-
-Use both — they're complementary.
-
 ## How to author a new skill
 
 1. Create `skills/<id>/SKILL.md` with Agent Skills frontmatter:
@@ -155,7 +142,5 @@ ruff check src/ tests/ && ruff format --check src/ tests/ && mypy src/ && pytest
 
 ## Links
 
-- [Design proposal](https://github.com/kedro-org/kedro/issues/5525#issuecomment-4439138517)
 - [Agent Skills standard](https://agentskills.io/)
-- [Kedro MCP](https://github.com/kedro-org/kedro-mcp)
 - [Kedro docs](https://docs.kedro.org)
