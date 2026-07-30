@@ -37,7 +37,7 @@ my-kedro-project/
 ```
 
 `AGENTS.md` is the content-discovery channel — one file reaches Cursor, Copilot,
-Codex CLI, Windsurf, Amp, and Devin. `.cursor/rules/` and
+and Codex CLI. `.cursor/rules/` and
 `.github/instructions/` add glob-scoped activation so the skill fires only when
 editing matching files, not on every prompt.
 
@@ -93,7 +93,7 @@ See the [Agent Skills standard](https://agentskills.io/) for the full spec.
 - **Claude Code:** Reads `.claude/skills/<id>/SKILL.md` directly. The skill is always discoverable (no `paths:` scoping in the Claude copy). If you want `AGENTS.md` content in Claude sessions too, add `@AGENTS.md` to a `CLAUDE.md` file.
 - **Cursor:** `.cursor/rules/*.mdc` fires only when editing files matching `globs:` patterns.
 - **GitHub Copilot:** `.github/instructions/*.instructions.md` fires only when editing files matching `applyTo:` patterns.
-- **Codex CLI / Windsurf / Amp / Devin:** Read `AGENTS.md` natively. Skill block is always active.
+- **Codex CLI:** Reads `AGENTS.md` natively. Skill block is always active.
 
 <details>
 <summary>Manual testing walkthrough</summary>
