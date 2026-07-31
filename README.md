@@ -98,8 +98,7 @@ See the [Agent Skills standard](https://agentskills.io/) for the full spec.
 - **GitHub Copilot:** `.github/instructions/*.instructions.md` fires only when editing files matching `applyTo:` patterns.
 - **Codex CLI:** Reads `AGENTS.md` natively. Skill block is always active.
 
-<details>
-<summary>How to try it out</summary>
+## How to try it out
 
 ```bash
 # Install kedro-skills from source (in the kedro-skills repo root)
@@ -110,31 +109,31 @@ pip install kedro
 kedro new --name test-project -s spaceflights-pandas
 cd test-project
 
-# Install a skill (will prompt for IDE selection — press Enter for all)
+# See what's available
 kedro skills list
+
+# Install the catalog-config skill
 kedro skills install catalog-config
 
-# Inspect the output
+# Check what was written
 ls .agents/skills/catalog-config/SKILL.md
 cat AGENTS.md
 ls .cursor/rules/
 ls .github/instructions/
 ls .claude/skills/catalog-config/
 
-# Verify idempotency (no errors on re-run)
+# Running install again is safe — nothing changes
 kedro skills install catalog-config --ide cursor,copilot,claude
 
-# Verify drift detection
+# If you hand-edit a managed file, update will let you know
 echo "modified" > .cursor/rules/catalog-config.mdc
-kedro skills update          # should refuse with file path
-kedro skills update --force  # should overwrite
+kedro skills update          # refuses and names the modified file
+kedro skills update --force  # overwrites your edit with the managed version
 
-# Verify uninstall
+# Clean removal when you no longer need a skill
 kedro skills uninstall catalog-config
-kedro skills list            # should show "not installed"
+kedro skills list            # back to "not installed"
 ```
-
-</details>
 
 ## Development
 
