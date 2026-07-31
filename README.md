@@ -1,65 +1,104 @@
 # kedro-skills
 
 [![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg)](https://pypi.org/project/kedro-skills/)
+[![PyPI Version](https://img.shields.io/pypi/v/kedro-skills.svg)](https://pypi.org/project/kedro-skills/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-Distribute AI coding skills to Kedro projects.
+Distribute AI coding skills to Kedro projects. One command installs contextual
+guidance that activates automatically when your AI assistant edits matching
+files — across Cursor, GitHub Copilot, Claude Code, and Codex CLI.
 
 ## Installation
 
 ```bash
-# From the repository root:
-pip install .
-
-# Or in editable/development mode:
-pip install -e ".[dev]"
+pip install kedro-skills
 ```
 
 ## Quick start
 
 ```bash
-# Inside a Kedro project:
+# Inside any Kedro project:
 kedro skills list
-kedro skills install catalog-config       # prompts for IDE selection
-kedro skills install catalog-config --ide cursor  # non-interactive
-kedro skills update
-kedro skills uninstall catalog-config
+kedro skills install catalog-config
 ```
 
-### CLI commands
+This writes managed files into your project. They should be committed to git so
+the whole team benefits.
+
+## What it writes
+
+```
+my-kedro-project/
+├── .agents/skills/catalog-config/SKILL.md              # canonical (Agent Skills standard)
+├── AGENTS.md                                           # content discovery (Cursor, Copilot, Codex CLI)
+├── .cursor/rules/catalog-config.mdc                    # glob-scoped activation (Cursor)
+├── .github/instructions/catalog-config.instructions.md # glob-scoped activation (Copilot)
+└── .claude/skills/catalog-config/SKILL.md              # Claude Code (inline copy, always discoverable)
+```
+
+`AGENTS.md` is the content-discovery channel — one file reaches Cursor, Copilot,
+and Codex CLI. `.cursor/rules/` and
+`.github/instructions/` add glob-scoped activation so the skill fires only when
+editing matching files, not on every prompt.
+
+## CLI reference
 
 | Command | Description |
 |---------|-------------|
 | `kedro skills list` | Show available skills and their install status |
-| `kedro skills install <id>` | Install a skill (prompts for IDE selection) |
-| `kedro skills install <id> --ide cursor,claude` | Install for specific IDEs (no prompt) |
-| `kedro skills install --all` | Install all available skills for all IDEs |
-| `kedro skills install --force` | Overwrite even if files were modified |
-| `kedro skills update` | Re-install all installed skills (picks up new versions) |
+| `kedro skills install <id>` | Install a skill for all supported IDEs |
+| `kedro skills install --all` | Install every available skill |
+| `kedro skills install --ide cursor,claude` | Restrict to specific IDEs |
+| `kedro skills install --force` | Overwrite even if files were hand-edited |
+| `kedro skills update` | Re-render all installed skills (picks up package upgrades) |
 | `kedro skills update --force` | Overwrite modified files during update |
-| `kedro skills uninstall <id>` | Remove a skill from the project |
-| `kedro skills uninstall --force` | Remove even if files were modified |
+| `kedro skills uninstall <id>` | Remove a skill and all its managed files |
+| `kedro skills uninstall --force` | Remove even if files were hand-edited |
 
-> **Tip:** For CI/scripts, always pass `--ide` or `--all` to avoid the interactive prompt.
+## How to author a new skill
 
-### Claude Code and `AGENTS.md`
+Before creating a new skill, run `kedro skills list` to check it doesn't overlap
+with an existing one.
 
-Claude Code reads `CLAUDE.md`, not `AGENTS.md`. Installing for `claude` writes
-`.claude/skills/<id>/SKILL.md`, which Claude discovers on its own, so no extra
-setup is needed for the skills themselves.
+1. Create `skills/<id>/SKILL.md` with Agent Skills frontmatter:
+   ```yaml
+   ---
+   name: my-skill
+   description: >-
+     What this skill helps with.
+   ---
+   ```
+2. Add a registry entry in `registry.yaml`:
+   ```yaml
+   skills:
+     - id: my-skill
+       category: core
+       description: >-
+         What this skill helps with.
+       paths:
+         - "src/**/*.py"
+       ide_support:
+         - cursor
+         - copilot
+         - claude
+         - codex
+   ```
+3. Install in dev mode and test:
+   ```bash
+   pip install -e .
+   kedro skills install my-skill
+   ```
 
-If you also want the rest of your project's `AGENTS.md` in Claude's session
-context, import it from a `CLAUDE.md` you own:
+See the [Agent Skills standard](https://agentskills.io/) for the full spec.
 
-```markdown
-@AGENTS.md
-```
+## IDE-specific notes
 
-Prefer the import over `ln -s AGENTS.md CLAUDE.md`: symlinks need Administrator
-privileges or Developer Mode on Windows, and Git checkouts with
-`core.symlinks=false` turn them into a plain file containing the target path.
+- **Claude Code:** Reads `.claude/skills/<id>/SKILL.md` directly. The skill is always discoverable (no `paths:` scoping in the Claude copy). If you want `AGENTS.md` content in Claude sessions too, add `@AGENTS.md` to a `CLAUDE.md` file.
+- **Cursor:** `.cursor/rules/*.mdc` fires only when editing files matching `globs:` patterns.
+- **GitHub Copilot:** `.github/instructions/*.instructions.md` fires only when editing files matching `applyTo:` patterns.
+- **Codex CLI:** Reads `AGENTS.md` natively. Skill block is always active.
 
-### Manual testing
+## How to try it out
 
 ```bash
 # Install kedro-skills from source (in the kedro-skills repo root)
@@ -70,30 +109,30 @@ pip install kedro
 kedro new --name test-project -s spaceflights-pandas
 cd test-project
 
-# Install a skill (will prompt for IDE selection — press Enter for all)
+# See what's available
 kedro skills list
-kedro skills install catalog-config
-# Expected prompt: "Available IDEs for 'catalog-config': cursor, copilot, claude"
-#                  "Install for which IDEs? [all]:"
 
-# Inspect the output
+# Install the catalog-config skill
+kedro skills install catalog-config
+
+# Check what was written
 ls .agents/skills/catalog-config/SKILL.md
 cat AGENTS.md
 ls .cursor/rules/
 ls .github/instructions/
 ls .claude/skills/catalog-config/
 
-# Verify idempotency (no errors on re-run)
+# Running install again is safe — nothing changes
 kedro skills install catalog-config --ide cursor,copilot,claude
 
-# Verify drift detection
+# If you hand-edit a managed file, update will let you know
 echo "modified" > .cursor/rules/catalog-config.mdc
-kedro skills update          # should refuse with file path
-kedro skills update --force  # should overwrite
+kedro skills update          # refuses and names the modified file
+kedro skills update --force  # overwrites your edit with the managed version
 
-# Verify uninstall
+# Clean removal when you no longer need a skill
 kedro skills uninstall catalog-config
-kedro skills list            # should show "not installed"
+kedro skills list            # back to "not installed"
 ```
 
 ## Development
@@ -102,3 +141,8 @@ kedro skills list            # should show "not installed"
 pip install -e ".[dev]"
 ruff check src/ tests/ && ruff format --check src/ tests/ && mypy src/ && pytest tests/ -v
 ```
+
+## Links
+
+- [Agent Skills standard](https://agentskills.io/)
+- [Kedro docs](https://docs.kedro.org)
