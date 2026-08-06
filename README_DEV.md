@@ -114,3 +114,10 @@ with an existing one.
 |----------|---------|-------------|
 | `ci.yml` | Push to `main` + PRs | Lint, type-check, tests (3.10–3.14), build sdist+wheel |
 | `publish.yml` | Push to `main` | Checks if version is new on PyPI → build → publish → GitHub release from `RELEASE.md` |
+
+### Required repo secrets
+
+| Secret | Purpose | Where to get it |
+|--------|---------|-----------------|
+| `PYPI_TOKEN` | Upload packages to PyPI | https://pypi.org/manage/account/token/ (scoped to `kedro-skills`) |
+| `GH_TAGGING_TOKEN` | Create tags and GitHub releases | GitHub PAT with `contents: write` scope |
