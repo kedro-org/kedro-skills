@@ -114,11 +114,3 @@ with an existing one.
 |----------|---------|-------------|
 | `ci.yml` | Push to `main` + PRs | Lint, type-check, tests (3.10–3.14), build sdist+wheel |
 | `publish.yml` | Push to `main` | Checks if version is new on PyPI → build → publish → GitHub release from `RELEASE.md` |
-
-### PyPI Trusted Publishing
-
-The publish workflow uses OIDC (no API tokens). Setup required:
-
-1. On **pypi.org** — register `kedro-skills` with a Trusted Publisher:
-   - Owner: `kedro-org`, Repository: `kedro-skills`, Workflow: `publish.yml`, Environment: `pypi`
-2. On **GitHub** — create environment `pypi` at repo Settings → Environments
