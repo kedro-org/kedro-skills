@@ -1,3 +1,11 @@
+# Upcoming Release
+
+## Major features and improvements
+
+## Bug fixes and other changes
+
+## Community contributions
+
 # Release 0.1.0
 
 ## What is `kedro-skills`?
