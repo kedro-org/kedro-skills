@@ -42,7 +42,7 @@ license = {text = "Apache Software License (Apache 2.0)"}
 name = "kedro-skills"
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.10"
-version = "0.1.0"
+version = "0.1.1"
 
 [project.entry-points."kedro.global_commands"]
 kedro-skills = "kedro_skills.cli:commands"
