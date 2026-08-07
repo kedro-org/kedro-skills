@@ -3,6 +3,13 @@
 ## Bug fixes and other changes
 ## Community contributions
 
+# Release 0.1.1
+
+## What's changed
+
+- Automated release workflow validation (first release via `publish.yml`).
+- No functional changes from 0.1.0.
+
 # Release 0.1.0
 
 ## What is `kedro-skills`?
