@@ -55,42 +55,6 @@ editing matching files, not on every prompt.
 | `kedro skills uninstall <id>` | Remove a skill and all its managed files |
 | `kedro skills uninstall --force` | Remove even if files were hand-edited |
 
-## How to author a new skill
-
-Before creating a new skill, run `kedro skills list` to check it doesn't overlap
-with an existing one.
-
-1. Create `skills/<id>/SKILL.md` with Agent Skills frontmatter:
-   ```yaml
-   ---
-   name: my-skill
-   description: >-
-     What this skill helps with.
-   ---
-   ```
-2. Add a registry entry in `registry.yaml`:
-   ```yaml
-   skills:
-     - id: my-skill
-       category: core
-       description: >-
-         What this skill helps with.
-       paths:
-         - "src/**/*.py"
-       ide_support:
-         - cursor
-         - copilot
-         - claude
-         - codex
-   ```
-3. Install in dev mode and test:
-   ```bash
-   pip install -e .
-   kedro skills install my-skill
-   ```
-
-See the [Agent Skills standard](https://agentskills.io/) for the full spec.
-
 ## IDE-specific notes
 
 - **Claude Code:** Reads `.claude/skills/<id>/SKILL.md` directly. The skill is always discoverable (no `paths:` scoping in the Claude copy). If you want `AGENTS.md` content in Claude sessions too, add `@AGENTS.md` to a `CLAUDE.md` file.
@@ -137,10 +101,7 @@ kedro skills list            # back to "not installed"
 
 ## Development
 
-```bash
-pip install -e ".[dev]"
-ruff check src/ tests/ && ruff format --check src/ tests/ && mypy src/ && pytest tests/ -v
-```
+See [README_DEV.md](README_DEV.md) for setup, running tests, authoring skills, and releasing.
 
 ## Links
 
