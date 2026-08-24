@@ -1,11 +1,29 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+@pytest.fixture()
+def sent_events(
+    monkeypatch: pytest.MonkeyPatch,
+) -> list[tuple[str, dict[str, Any]]]:
+    """Capture telemetry events instead of dispatching them."""
+    from kedro_skills import telemetry  # noqa: PLC0415
+
+    events: list[tuple[str, dict[str, Any]]] = []
+
+    def fake_track_event(
+        event_name: str, properties: dict[str, Any], project_root: Path | None
+    ) -> None:
+        events.append((event_name, properties))
+
+    monkeypatch.setattr(telemetry, "track_event", fake_track_event)
+    return events
 
 
 @pytest.fixture()

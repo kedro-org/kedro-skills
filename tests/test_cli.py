@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import sys
+from typing import TYPE_CHECKING, Any
 
 from click.testing import CliRunner
 
@@ -84,3 +85,135 @@ class TestInstallOutput:
         assert result.exit_code == 0
         assert "5 files" in result.output
         assert "Available IDEs" not in result.output
+
+
+class TestTelemetryEvents:
+    """The install/update/uninstall commands report anonymous usage events."""
+
+    def test_install_sends_event(
+        self,
+        kedro_project: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        sent_events: list[tuple[str, dict[str, Any]]],
+    ) -> None:
+        monkeypatch.chdir(kedro_project)
+        result = CliRunner().invoke(
+            skills, ["install", "catalog-config", "--ide", "cursor"]
+        )
+        assert result.exit_code == 0
+        assert sent_events == [
+            (
+                "kedro_skills_install",
+                {
+                    "skill_id": "catalog-config",
+                    "target_ides": "cursor",
+                    "install_all": False,
+                    "success": True,
+                },
+            )
+        ]
+
+    def test_install_all_sends_event_per_skill(
+        self,
+        kedro_project: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        sent_events: list[tuple[str, dict[str, Any]]],
+    ) -> None:
+        monkeypatch.chdir(kedro_project)
+        result = CliRunner().invoke(skills, ["install", "--all"])
+        assert result.exit_code == 0
+        assert len(sent_events) >= 1
+        assert all(name == "kedro_skills_install" for name, _ in sent_events)
+        assert all(props["install_all"] is True for _, props in sent_events)
+        assert any(props["skill_id"] == "catalog-config" for _, props in sent_events)
+
+    def test_install_unknown_skill_masks_id(
+        self,
+        kedro_project: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        sent_events: list[tuple[str, dict[str, Any]]],
+    ) -> None:
+        monkeypatch.chdir(kedro_project)
+        result = CliRunner().invoke(
+            skills, ["install", "no-such-skill", "--ide", "cursor"]
+        )
+        assert result.exit_code != 0
+        assert sent_events == [
+            (
+                "kedro_skills_install",
+                {"skill_id": "unknown", "install_all": False, "success": False},
+            )
+        ]
+
+    def test_update_sends_summary_event(
+        self,
+        kedro_project: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        sent_events: list[tuple[str, dict[str, Any]]],
+    ) -> None:
+        monkeypatch.chdir(kedro_project)
+        CliRunner().invoke(skills, ["install", "catalog-config", "--ide", "cursor"])
+        sent_events.clear()
+
+        result = CliRunner().invoke(skills, ["update"])
+        assert result.exit_code == 0
+        assert sent_events == [
+            (
+                "kedro_skills_update",
+                {"skills_updated": 1, "drift_detected": False, "success": True},
+            )
+        ]
+
+    def test_update_with_nothing_installed(
+        self,
+        kedro_project: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        sent_events: list[tuple[str, dict[str, Any]]],
+    ) -> None:
+        monkeypatch.chdir(kedro_project)
+        result = CliRunner().invoke(skills, ["update"])
+        assert result.exit_code == 0
+        assert sent_events == [
+            (
+                "kedro_skills_update",
+                {"skills_updated": 0, "drift_detected": False, "success": True},
+            )
+        ]
+
+    def test_uninstall_sends_event(
+        self,
+        kedro_project: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        sent_events: list[tuple[str, dict[str, Any]]],
+    ) -> None:
+        monkeypatch.chdir(kedro_project)
+        CliRunner().invoke(skills, ["install", "catalog-config", "--ide", "cursor"])
+        sent_events.clear()
+
+        result = CliRunner().invoke(skills, ["uninstall", "catalog-config"])
+        assert result.exit_code == 0
+        assert sent_events == [
+            ("kedro_skills_uninstall", {"skill_id": "catalog-config"})
+        ]
+
+    def test_list_sends_no_event(
+        self,
+        kedro_project: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        sent_events: list[tuple[str, dict[str, Any]]],
+    ) -> None:
+        monkeypatch.chdir(kedro_project)
+        result = CliRunner().invoke(skills, ["list"])
+        assert result.exit_code == 0
+        assert sent_events == []
+
+    def test_install_works_without_kedro_telemetry(
+        self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(kedro_project)
+        monkeypatch.setitem(sys.modules, "kedro_telemetry", None)
+        monkeypatch.setitem(sys.modules, "kedro_telemetry.api", None)
+        result = CliRunner().invoke(
+            skills, ["install", "catalog-config", "--ide", "cursor"]
+        )
+        assert result.exit_code == 0
