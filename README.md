@@ -103,11 +103,18 @@ kedro skills list            # back to "not installed"
 
 When [`kedro-telemetry`](https://github.com/kedro-org/kedro-plugins/tree/main/kedro-telemetry)
 is installed (it ships with Kedro), the `install`, `update` and `uninstall`
-commands report anonymous usage events: the skill id, the target IDEs, whether
-`--all` was used, how many skills an update touched, whether locally modified
-files were detected, and whether the operation succeeded. No skill content,
-file paths, project details or personal data are ever sent, and `kedro skills
-list` sends nothing. The standard
+commands report anonymous usage events:
+
+| Event | Properties |
+|---|---|
+| `kedro_skills_install` | `skill_id`, `target_ides` (sorted, comma-separated), `install_all` (whether `--all` was used), `success` |
+| `kedro_skills_update` | `skills_updated` (count), `drift_detected` (whether locally modified skill files were found), `success` |
+| `kedro_skills_uninstall` | `skill_id` |
+
+Skill ids are reported when they match a skill shipped with this package;
+anything else is sent as `unknown`. `kedro skills list` sends no event. No
+skill content, file paths, project details or personal data are ever sent.
+The standard
 [Kedro telemetry opt-out](https://docs.kedro.org/en/stable/about/telemetry/)
 (`DO_NOT_TRACK`, `KEDRO_DISABLE_TELEMETRY`, or a `.telemetry` file with
 `consent: false`) disables these events too.
