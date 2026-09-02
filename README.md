@@ -99,6 +99,26 @@ kedro skills uninstall catalog-config
 kedro skills list            # back to "not installed"
 ```
 
+## Telemetry
+
+When [`kedro-telemetry`](https://github.com/kedro-org/kedro-plugins/tree/main/kedro-telemetry)
+is installed (it ships with Kedro), the `install`, `update` and `uninstall`
+commands report anonymous usage events:
+
+| Event | Properties |
+|---|---|
+| `kedro_skills_install` | `skill_id`, `target_ides` (sorted, comma-separated), `install_all` (whether `--all` was used), `success` |
+| `kedro_skills_update` | `skills_updated` (count), `drift_detected` (whether locally modified skill files were found), `success` |
+| `kedro_skills_uninstall` | `skill_id` |
+
+Skill ids are reported when they match a skill shipped with this package;
+anything else is sent as `unknown`. `kedro skills list` sends no event. No
+skill content, file paths, project details or personal data are ever sent.
+The standard
+[Kedro telemetry opt-out](https://docs.kedro.org/en/stable/about/telemetry/)
+(`DO_NOT_TRACK`, `KEDRO_DISABLE_TELEMETRY`, or a `.telemetry` file with
+`consent: false`) disables these events too.
+
 ## Development
 
 See [README_DEV.md](README_DEV.md) for setup, running tests, authoring skills, and releasing.

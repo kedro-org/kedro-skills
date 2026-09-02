@@ -124,6 +124,10 @@ def install_cmd(
 
     from kedro_skills.orchestrator import install_skill  # noqa: PLC0415
     from kedro_skills.registry import load_registry  # noqa: PLC0415
+    from kedro_skills.telemetry import (  # noqa: PLC0415
+        track_install,
+        track_install_failure,
+    )
 
     if install_all:
         registry = load_registry()
@@ -132,6 +136,7 @@ def install_cmd(
                 skill.id, project_root, ides=parsed_ides, force=force
             )
             _print_result(result)
+            track_install(result, install_all=True, project_root=project_root)
     elif skill_id:
         if parsed_ides is None:
             parsed_ides = _prompt_ide_selection(skill_id)
@@ -140,8 +145,12 @@ def install_cmd(
                 skill_id, project_root, ides=parsed_ides, force=force
             )
         except KeyError as exc:
+            track_install_failure(
+                skill_id, install_all=False, project_root=project_root
+            )
             raise click.ClickException(str(exc)) from exc
         _print_result(result)
+        track_install(result, install_all=False, project_root=project_root)
     else:
         raise click.UsageError("Provide a SKILL_ID or use --all.")
 
@@ -155,14 +164,23 @@ def update_cmd(force: bool) -> None:
     project_root = find_project_root()
 
     from kedro_skills.orchestrator import update_skills  # noqa: PLC0415
+    from kedro_skills.telemetry import (  # noqa: PLC0415
+        track_update,
+        track_update_failure,
+    )
 
-    results = update_skills(project_root, force=force)
+    try:
+        results = update_skills(project_root, force=force)
+    except Exception:
+        track_update_failure(project_root)
+        raise
+
     if not results:
         click.echo("Nothing to update — no skills are installed.")
-        return
-
-    for result in results:
-        _print_result(result)
+    else:
+        for result in results:
+            _print_result(result)
+    track_update(results, project_root)
 
 
 @skills.command(name="uninstall")
@@ -175,12 +193,14 @@ def uninstall_cmd(skill_id: str, force: bool) -> None:
     project_root = find_project_root()
 
     from kedro_skills.orchestrator import uninstall_skill  # noqa: PLC0415
+    from kedro_skills.telemetry import track_uninstall  # noqa: PLC0415
 
     try:
         result = uninstall_skill(skill_id, project_root, force=force)
     except KeyError as exc:
         raise click.ClickException(str(exc)) from exc
     _print_result(result)
+    track_uninstall(result, project_root)
 
 
 def _past_tense(operation: str) -> str:
