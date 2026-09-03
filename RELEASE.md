@@ -1,4 +1,6 @@
 # Upcoming Release
+
+# Release 0.2.0
 ## Major features and improvements
 - Added anonymous usage telemetry for the `install`, `update` and `uninstall` commands, following the standard `kedro-telemetry` consent flow.
 ## Bug fixes and other changes
