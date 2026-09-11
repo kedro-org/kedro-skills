@@ -13,3 +13,18 @@ skills:
       - copilot
       - claude
       - codex
+  - id: llm-context-nodes
+    category: genai
+    description: >-
+      Guidance for Kedro's experimental llm_context_node, LLMContextNode,
+      LLMContext and tool() API in src/**/pipelines/**/*.py. Use when composing
+      an LLM dataset, prompt datasets and tool builders into an LLMContext, or
+      writing the node that consumes one, in GenAI or agent pipelines. Adds
+      nothing for ordinary pipeline code.
+    paths:
+      - "src/**/pipelines/**/*.py"
+    ide_support:
+      - cursor
+      - copilot
+      - claude
+      - codex
