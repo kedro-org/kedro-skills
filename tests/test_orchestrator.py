@@ -242,8 +242,7 @@ class TestParametersAndConfigSkill:
         assert (kedro_project / "AGENTS.md").is_file()
         assert (kedro_project / ".cursor/rules/parameters-and-config.mdc").is_file()
         assert (
-            kedro_project
-            / ".github/instructions/parameters-and-config.instructions.md"
+            kedro_project / ".github/instructions/parameters-and-config.instructions.md"
         ).is_file()
         assert (
             kedro_project / ".claude/skills/parameters-and-config/SKILL.md"
@@ -261,12 +260,9 @@ class TestParametersAndConfigSkill:
         assert not (
             kedro_project / ".agents/skills/parameters-and-config/SKILL.md"
         ).is_file()
+        assert not (kedro_project / ".cursor/rules/parameters-and-config.mdc").is_file()
         assert not (
-            kedro_project / ".cursor/rules/parameters-and-config.mdc"
-        ).is_file()
-        assert not (
-            kedro_project
-            / ".github/instructions/parameters-and-config.instructions.md"
+            kedro_project / ".github/instructions/parameters-and-config.instructions.md"
         ).is_file()
         assert not (
             kedro_project / ".claude/skills/parameters-and-config/SKILL.md"
@@ -294,9 +290,7 @@ class TestParametersAndConfigSkill:
         runner = CliRunner()
         result = runner.invoke(skills, ["install", "--all"])
         assert result.exit_code == 0
-        assert (
-            kedro_project / ".agents/skills/catalog-config/SKILL.md"
-        ).is_file()
+        assert (kedro_project / ".agents/skills/catalog-config/SKILL.md").is_file()
         assert (
             kedro_project / ".agents/skills/parameters-and-config/SKILL.md"
         ).is_file()
