@@ -30,7 +30,7 @@ the whole team benefits.
 | Skill | Activates on | Guidance |
 |-------|--------------|----------|
 | `catalog-config` | `conf/**/*.yml`, `conf/**/*.yaml` | Data catalog entries: dataset types, factories, credentials, interpolation |
-| `llm-context-nodes` | `src/**/pipelines/**/*.py` | The experimental `llm_context_node` API for composing LLMs, prompts and tools |
+| `llm-context-nodes` | `src/**/pipelines/**/*.py` | The `llm_context_node` API for composing LLMs, prompts and tools |
 
 ## What it writes
 

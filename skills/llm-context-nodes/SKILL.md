@@ -1,9 +1,9 @@
 ---
 name: llm-context-nodes
 description: >-
-  Guidance for Kedro's experimental llm_context_node, LLMContextNode, LLMContext
-  and tool() API in src/**/pipelines/**/*.py. Use when composing an LLM dataset,
-  prompt datasets and tool builders into an LLMContext, or writing the node that
+  Guidance for Kedro's llm_context_node, LLMContextNode, LLMContext and tool()
+  API in src/**/pipelines/**/*.py. Use when composing an LLM dataset, prompt
+  datasets and tool builders into an LLMContext, or writing the node that
   consumes one, in GenAI or agent pipelines. Adds nothing for ordinary pipeline
   code.
 ---
@@ -13,7 +13,7 @@ description: >-
 
 **If neither the file nor the request involves `llm_context_node`, `LLMContextNode`, `LLMContext` or `tool` from `kedro.pipeline`, stop here: this skill has nothing to add and must not be mentioned.** Do not suggest converting ordinary nodes into LLM context nodes.
 
-The API is **experimental**. It was added in Kedro 1.2.0, its signature is unchanged through 1.6.0, and it may still change in a later release, so check the installed version before writing code.
+The API was added in Kedro 1.2.0 and its signature has not changed since. Kedro 1.2.0 to 1.6.0 mark it as experimental, and later releases ship it as stable. Check the installed version before writing code, because the API does not exist below 1.2.0.
 
 **CRITICAL:** `LLMContext` has no `execute()`, `run()`, `invoke()` or `stream()`; the downstream node calls `context.llm` and `context.tools[...]` with their own APIs. `context.tools` is keyed by the name of the object a builder *returns*, never by the builder's name. Every parameter passed to `tool(...)` needs the `params:` prefix and must match a builder argument by name.
 
@@ -176,9 +176,9 @@ The `support-agent-langgraph` starter instead uses a catch-all factory (`"{defau
 
 `name`, `tags`, `confirms`, `namespace` and `preview_fn` behave exactly as on `node()`. Wrapping a context node in `pipeline(..., namespace="rag")` prefixes its datasets and parameters (`rag.docs`, `params:rag.max_matches`) like any other node, while `context.prompts` keeps the keys you declared (`context.prompts["qa_prompt"]`, not `"rag.qa_prompt"`). Two more things stay un-prefixed: `context_id` is the `name=` you passed (`qa_context_node`) even though the node is now `rag.qa_context_node`, and the copied node is a plain `Node`, so find context nodes by name or tag rather than `isinstance(n, LLMContextNode)`. The `namespace=` argument on the node itself only labels the node; it does not rename datasets. Do not put dots in dataset names yourself: Kedro reserves `.` for namespacing and warns about it.
 
-### 8. Do not fight the experimental warning
+### 8. The experimental warning on Kedro 1.2.0 to 1.6.0
 
-`KedroExperimentalWarning: tool is experimental ...`, followed by one warning each for `llm_context_node`, `LLMContextNode` and `LLMContext`, is expected once per process. It is not an error, and it is not a reason to rewrite the node as a plain `node()` or to patch Kedro. If the user wants it gone:
+Those releases mark the API as experimental, so `KedroExperimentalWarning: tool is experimental ...`, followed by one warning each for `llm_context_node`, `LLMContextNode` and `LLMContext`, is expected once per process. It is not an error, and it is not a reason to rewrite the node as a plain `node()` or to patch Kedro. Later releases ship the API as stable and emit nothing, so upgrading Kedro removes it. To silence it on an older version:
 
 ```python
 import warnings
@@ -186,6 +186,8 @@ from kedro.utils import KedroExperimentalWarning
 
 warnings.filterwarnings("ignore", category=KedroExperimentalWarning)
 ```
+
+Passing `preview_fn` still warns on every version, because node previews are a separate experimental feature.
 
 ## Complete example
 
@@ -309,5 +311,5 @@ Suggest updating `requirements.txt` or `pyproject.toml` when you add one of thes
 
 - Read the installed implementation (see "Check the installed version once"). It is short and is the whole feature.
 - Documentation, replacing `{version}` with the installed version or `stable`: `https://docs.kedro.org/en/{version}/build/llm_context_node/` (its consumption example uses pseudo-code, see Rule 1).
-- Experimental API policy and warning suppression: https://docs.kedro.org/en/stable/about/experimental/
+- Experimental API policy, relevant to Kedro 1.2.0 to 1.6.0 and to `preview_fn`: https://docs.kedro.org/en/stable/about/experimental/
 - Reference project using the API end to end with LangGraph, Langfuse and Opik: https://github.com/kedro-org/kedro-starters/tree/main/support-agent-langgraph
