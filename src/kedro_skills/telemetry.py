@@ -107,5 +107,13 @@ def track_update_failure(project_root: Path) -> None:
 
 
 def track_uninstall(result: OperationResult, project_root: Path) -> None:
-    """Report one completed uninstall of a single skill."""
-    track_event(EVENT_UNINSTALL, {"skill_id": result.skill_id}, project_root)
+    """Report one completed (or drift-refused) uninstall of a single skill."""
+    track_event(
+        EVENT_UNINSTALL,
+        {
+            "skill_id": result.skill_id,
+            "success": not result.refused,
+            "drift_detected": bool(result.refused) or bool(result.kept),
+        },
+        project_root,
+    )
