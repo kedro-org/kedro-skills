@@ -1,5 +1,8 @@
 # Upcoming Release
 
+## Major features and improvements
+- Added `parameters-and-config` skill, offering guidance for writing Kedro parameter and credential files.
+
 # Release 0.2.0
 ## Major features and improvements
 - Added anonymous usage telemetry for the `install`, `update` and `uninstall` commands, following the standard `kedro-telemetry` consent flow.
