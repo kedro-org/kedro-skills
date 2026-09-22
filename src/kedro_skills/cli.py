@@ -214,9 +214,7 @@ def uninstall_cmd(skill_id: str, force: bool, keep_modified: bool) -> None:
         n = len(result.refused)
         s = "s" if n > 1 else ""
         has_have = "has" if n == 1 else "have"
-        click.echo(
-            f"\n  {n} file{s} {has_have} been modified since installation:"
-        )
+        click.echo(f"\n  {n} file{s} {has_have} been modified since installation:")
         for d in result.refused:
             click.echo(f"     {d.path}")
         click.echo()

@@ -208,9 +208,7 @@ class TestUninstallDrift:
         cursor_file = kedro_project / ".cursor/rules/catalog-config.mdc"
         cursor_file.write_text("user modified content", encoding="utf-8")
 
-        result = runner.invoke(
-            skills, ["uninstall", "catalog-config"], input="\n"
-        )
+        result = runner.invoke(skills, ["uninstall", "catalog-config"], input="\n")
         assert result.exit_code == 0
         assert "modified" in result.output
         assert "Kept 1 modified file" in result.output
@@ -277,9 +275,7 @@ class TestUninstallDrift:
         cursor_file = kedro_project / ".cursor/rules/catalog-config.mdc"
         cursor_file.write_text("user modified content", encoding="utf-8")
 
-        result = runner.invoke(
-            skills, ["uninstall", "catalog-config", "--force"]
-        )
+        result = runner.invoke(skills, ["uninstall", "catalog-config", "--force"])
         assert result.exit_code == 0
         assert not cursor_file.is_file()
 
@@ -323,13 +319,9 @@ class TestUninstallDrift:
         cursor_file = kedro_project / ".cursor/rules/catalog-config.mdc"
         cursor_file.write_text("user modified content", encoding="utf-8")
 
-        runner.invoke(
-            skills, ["uninstall", "catalog-config", "--keep-modified"]
-        )
+        runner.invoke(skills, ["uninstall", "catalog-config", "--keep-modified"])
 
-        result = runner.invoke(
-            skills, ["install", "catalog-config"], input="all\n"
-        )
+        result = runner.invoke(skills, ["install", "catalog-config"], input="all\n")
         assert result.exit_code == 0
         assert "Installed" in result.output
         assert "refused" not in result.output.lower()
