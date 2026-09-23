@@ -363,9 +363,7 @@ class TestUninstallDriftEdgeCases:
 
         from kedro_skills.orchestrator import uninstall_skill  # noqa: PLC0415
 
-        result = uninstall_skill(
-            "catalog-config", kedro_project, keep_modified=True
-        )
+        result = uninstall_skill("catalog-config", kedro_project, keep_modified=True)
         assert result.written
         assert not result.kept
         assert not result.refused
