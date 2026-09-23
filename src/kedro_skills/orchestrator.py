@@ -269,26 +269,31 @@ def uninstall_skill(
     skill = get_skill(skill_id)
     requested = [i for i in skill.ide_support if i in _VALID_IDES]
 
-    drifted_list = check_drift_for_skill(project_root, skill_id)
-    drifted_map = {d.path: d for d in drifted_list}
-
-    if drifted_map and not force and not keep_modified:
-        return OperationResult(
-            skill_id=skill_id,
-            operation="uninstall",
-            requested_ides=requested,
-            refused=drifted_list,
-        )
-
     written: list[FileRecord] = []
     kept: list[DriftedFile] = []
 
-    for rec in skill_state.files:
-        if rec.path in drifted_map and not force:
-            kept.append(drifted_map[rec.path])
-        else:
+    if force:
+        for rec in skill_state.files:
             _remove_file_record(rec, project_root)
             written.append(rec)
+    else:
+        drifted_list = check_drift_for_skill(project_root, skill_id)
+        drifted_map = {d.path: d for d in drifted_list}
+
+        if drifted_map and not keep_modified:
+            return OperationResult(
+                skill_id=skill_id,
+                operation="uninstall",
+                requested_ides=requested,
+                refused=drifted_list,
+            )
+
+        for rec in skill_state.files:
+            if rec.path in drifted_map:
+                kept.append(drifted_map[rec.path])
+            else:
+                _remove_file_record(rec, project_root)
+                written.append(rec)
 
     del installed.skills[skill_id]
     state_path = project_root / state.STATE_FILENAME

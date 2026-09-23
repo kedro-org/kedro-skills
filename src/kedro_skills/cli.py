@@ -257,7 +257,7 @@ def _print_result(result: object) -> None:
             status = "deleted" if d.actual_sha256 is None else "modified"
             click.echo(f"     {d.path} ({status})")
         click.echo("   Use --force to overwrite.")
-    if result.written or result.kept:
+    elif result.written or result.kept:
         verb = _past_tense(result.operation)
         click.echo(f"✓  {verb} '{result.skill_id}' ({len(result.written)} files)")
         if result.kept:
@@ -266,6 +266,6 @@ def _print_result(result: object) -> None:
             click.echo(f"   Kept {n} modified file{s}, now unmanaged:")
             for d in result.kept:
                 click.echo(f"     {d.path}")
-    elif not result.refused:
+    else:
         verb = _past_tense(result.operation)
         click.echo(f"✓  {verb} '{result.skill_id}'")
