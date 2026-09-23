@@ -318,7 +318,7 @@ def _remove_file_record(rec: FileRecord, project_root: Path) -> None:
     """Remove a single managed file or AGENTS.md block."""
     abs_path = project_root / rec.path
     if rec.kind == "agents_md_block" and rec.block_id:
-        _remove_agents_md_block(abs_path, rec.block_id)
+        _remove_agents_md_block(abs_path, rec.block_id, project_root)
     elif abs_path.is_file():
         abs_path.unlink()
         _cleanup_empty_parents(abs_path.parent, project_root)
@@ -339,7 +339,9 @@ def _cleanup_empty_parents(directory: Path, project_root: Path) -> None:
         current = current.parent
 
 
-def _remove_agents_md_block(agents_md_path: Path, block_id: str) -> None:
+def _remove_agents_md_block(
+    agents_md_path: Path, block_id: str, project_root: Path
+) -> None:
     """Remove the managed block from AGENTS.md; delete the file if it becomes empty."""
     if not agents_md_path.is_file():
         return
@@ -356,7 +358,7 @@ def _remove_agents_md_block(agents_md_path: Path, block_id: str) -> None:
     stripped = new_content.strip()
     if not stripped or _is_header_only(stripped):
         agents_md_path.unlink()
-        _cleanup_empty_parents(agents_md_path.parent, agents_md_path.parent)
+        _cleanup_empty_parents(agents_md_path.parent, project_root)
     else:
         agents_md_path.write_text(new_content, encoding="utf-8")
 
