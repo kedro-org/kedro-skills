@@ -350,3 +350,50 @@ class TestUninstallDrift:
             kedro_project / ".github/instructions/catalog-config.instructions.md"
         ).is_file()
         assert (kedro_project / ".claude/skills/catalog-config/SKILL.md").is_file()
+
+
+class TestUninstallDriftEdgeCases:
+    def test_keep_modified_no_drift_behaves_like_plain_uninstall(
+        self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """--keep-modified with no drifted files is a normal uninstall."""
+        monkeypatch.chdir(kedro_project)
+        runner = CliRunner()
+        runner.invoke(skills, ["install", "catalog-config"], input="all\n")
+
+        from kedro_skills.orchestrator import uninstall_skill  # noqa: PLC0415
+
+        result = uninstall_skill(
+            "catalog-config", kedro_project, keep_modified=True
+        )
+        assert result.written
+        assert not result.kept
+        assert not result.refused
+
+        assert not (kedro_project / ".agents/skills/catalog-config/SKILL.md").is_file()
+        assert not (kedro_project / ".cursor/rules/catalog-config.mdc").is_file()
+
+    def test_agents_md_block_drift_keep_modified(
+        self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Drifted AGENTS.md block is kept with --keep-modified."""
+        monkeypatch.chdir(kedro_project)
+        runner = CliRunner()
+        runner.invoke(skills, ["install", "catalog-config"], input="all\n")
+
+        agents_md = kedro_project / "AGENTS.md"
+        content = agents_md.read_text(encoding="utf-8")
+        content = content.replace(
+            "<!-- kedro-skills:catalog-config:end -->",
+            "User edit inside block\n<!-- kedro-skills:catalog-config:end -->",
+        )
+        agents_md.write_text(content, encoding="utf-8")
+
+        result = runner.invoke(
+            skills, ["uninstall", "catalog-config", "--keep-modified"]
+        )
+        assert result.exit_code == 0
+        assert agents_md.is_file()
+        assert "Kept 1 modified file" in result.output
+        assert not (kedro_project / ".cursor/rules/catalog-config.mdc").is_file()
+        assert not (kedro_project / ".claude/skills/catalog-config/SKILL.md").is_file()

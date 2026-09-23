@@ -226,6 +226,8 @@ def uninstall_cmd(skill_id: str, force: bool, keep_modified: bool) -> None:
             show_choices=True,
         )
 
+        # Re-calls the orchestrator; the first call returned early without
+        # touching files or state, so a second call is safe and consistent.
         if choice == "keep":
             result = uninstall_skill(skill_id, project_root, keep_modified=True)
         else:
