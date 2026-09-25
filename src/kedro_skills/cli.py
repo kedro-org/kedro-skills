@@ -188,17 +188,51 @@ def update_cmd(force: bool) -> None:
 @click.option(
     "--force", is_flag=True, help="Remove files even if they have been modified."
 )
-def uninstall_cmd(skill_id: str, force: bool) -> None:
+@click.option(
+    "--keep-modified",
+    is_flag=True,
+    help="Keep modified files as unmanaged; uninstall everything else.",
+)
+def uninstall_cmd(skill_id: str, force: bool, keep_modified: bool) -> None:
     """Uninstall a skill from the current Kedro project."""
+    if force and keep_modified:
+        raise click.UsageError("--force and --keep-modified are mutually exclusive.")
+
     project_root = find_project_root()
 
     from kedro_skills.orchestrator import uninstall_skill  # noqa: PLC0415
     from kedro_skills.telemetry import track_uninstall  # noqa: PLC0415
 
     try:
-        result = uninstall_skill(skill_id, project_root, force=force)
+        result = uninstall_skill(
+            skill_id, project_root, force=force, keep_modified=keep_modified
+        )
     except KeyError as exc:
         raise click.ClickException(str(exc)) from exc
+
+    if result.refused:
+        n = len(result.refused)
+        s = "s" if n > 1 else ""
+        has_have = "has" if n == 1 else "have"
+        click.echo(f"\n  {n} file{s} {has_have} been modified since installation:")
+        for d in result.refused:
+            click.echo(f"     {d.path}")
+        click.echo()
+
+        choice = click.prompt(
+            "  Keep modified files (no longer managed), or delete them?",
+            type=click.Choice(["keep", "delete"], case_sensitive=False),
+            default="keep",
+            show_choices=True,
+        )
+
+        # Re-calls the orchestrator; the first call returned early without
+        # touching files or state, so a second call is safe and consistent.
+        if choice == "keep":
+            result = uninstall_skill(skill_id, project_root, keep_modified=True)
+        else:
+            result = uninstall_skill(skill_id, project_root, force=True)
+
     _print_result(result)
     track_uninstall(result, project_root)
 
@@ -225,9 +259,15 @@ def _print_result(result: object) -> None:
             status = "deleted" if d.actual_sha256 is None else "modified"
             click.echo(f"     {d.path} ({status})")
         click.echo("   Use --force to overwrite.")
-    elif result.written:
+    elif result.written or result.kept:
         verb = _past_tense(result.operation)
         click.echo(f"✓  {verb} '{result.skill_id}' ({len(result.written)} files)")
+        if result.kept:
+            n = len(result.kept)
+            s = "s" if n > 1 else ""
+            click.echo(f"   Kept {n} modified file{s}, now unmanaged:")
+            for d in result.kept:
+                click.echo(f"     {d.path}")
     else:
         verb = _past_tense(result.operation)
         click.echo(f"✓  {verb} '{result.skill_id}'")

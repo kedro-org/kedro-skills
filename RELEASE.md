@@ -1,8 +1,14 @@
 # Upcoming Release
+
 ## Major features and improvements
 - Added the `llm-context-nodes` skill: guidance for the `llm_context_node` API, activated on `src/**/pipelines/**/*.py`.
 
+## Bug fixes and other changes
+* Fixed `kedro skills uninstall` silently deleting non-drifted files when a drifted file was present. Uninstall now prompts the user to keep (as unmanaged) or delete modified files, defaulting to keep. Added `--keep-modified` and `--force` flags for non-interactive use. 
+* The uninstall telemetry event now includes `success` and `drift_detected` fields.
+
 # Release 0.2.0
+
 ## Major features and improvements
 - Added anonymous usage telemetry for the `install`, `update` and `uninstall` commands, following the standard `kedro-telemetry` consent flow.
 ## Bug fixes and other changes
