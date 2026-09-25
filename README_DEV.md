@@ -39,8 +39,10 @@ src/kedro_skills/
     └── _pointer.py     # Shared pointer-line logic
 
 skills/
-└── catalog-config/
-    └── SKILL.md        # Canonical skill content (Agent Skills standard)
+├── catalog-config/
+│   └── SKILL.md        # Canonical skill content (Agent Skills standard)
+└── llm-context-nodes/
+    └── SKILL.md
 
 registry.yaml           # Skill metadata: id, category, paths, ide_support
 tests/                   # Mirrors src/ — one test module per source module
