@@ -199,4 +199,4 @@ For advanced credential patterns (nested `client_kwargs`, S3, SQL connection str
 
 ## OmegaConf interpolation
 
-Values can be injected at runtime: `${globals:key}` (from `conf/base/globals.yml`), `${runtime_params:key}` (from CLI `--params`), `${oc.env:VAR}` (environment variable). For advanced configuration patterns, refer to: https://docs.kedro.org/en/stable/configure/advanced_configuration/
+Values can be injected at runtime: `${globals:key}` (from `conf/base/globals.yml`), `${runtime_params:key}` (from CLI `--params`), `${oc.env:VAR}` (environment variable, credentials files only by default). For advanced configuration patterns, refer to: https://docs.kedro.org/en/stable/configure/advanced_configuration/
