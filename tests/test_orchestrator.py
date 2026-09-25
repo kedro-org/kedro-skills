@@ -145,7 +145,11 @@ class TestInstallLifecycle:
         runner = CliRunner()
         result = runner.invoke(skills, ["install", "--all"])
         assert result.exit_code == 0
-        assert (kedro_project / ".agents/skills/catalog-config/SKILL.md").is_file()
+
+        from kedro_skills.registry import load_registry  # noqa: PLC0415
+
+        for skill in load_registry():
+            assert (kedro_project / ".agents/skills" / skill.id / "SKILL.md").is_file()
 
 
 class TestErrorHandling:
