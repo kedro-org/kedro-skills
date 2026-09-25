@@ -25,6 +25,11 @@ skills:
       - "conf/**/parameters*.yaml"
       - "conf/**/credentials*.yml"
       - "conf/**/credentials*.yaml"
+    ide_support:
+      - cursor
+      - copilot
+      - claude
+      - codex
 
   - id: llm-context-nodes
     category: genai
