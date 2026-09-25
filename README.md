@@ -25,6 +25,13 @@ kedro skills install catalog-config
 This writes managed files into your project. They should be committed to git so
 the whole team benefits.
 
+## Available skills
+
+| Skill | Activates on | Guidance |
+|-------|--------------|----------|
+| `catalog-config` | `conf/**/*.yml`, `conf/**/*.yaml` | Data catalog entries: dataset types, factories, credentials, interpolation |
+| `llm-context-nodes` | `src/**/pipelines/**/*.py` | The `llm_context_node` API for composing LLMs, prompts and tools |
+
 ## What it writes
 
 ```

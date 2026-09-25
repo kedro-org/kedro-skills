@@ -44,8 +44,10 @@ class TestInstallLifecycle:
 
         result = runner.invoke(skills, ["list"])
         assert result.exit_code == 0
-        assert "catalog-config" in result.output
-        assert "not installed" not in result.output
+        row = next(
+            line for line in result.output.splitlines() if "catalog-config" in line
+        )
+        assert "not installed" not in row
 
     def test_install_is_idempotent(
         self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
@@ -140,7 +142,11 @@ class TestInstallLifecycle:
         runner = CliRunner()
         result = runner.invoke(skills, ["install", "--all"])
         assert result.exit_code == 0
-        assert (kedro_project / ".agents/skills/catalog-config/SKILL.md").is_file()
+
+        from kedro_skills.registry import load_registry  # noqa: PLC0415
+
+        for skill in load_registry():
+            assert (kedro_project / ".agents/skills" / skill.id / "SKILL.md").is_file()
 
 
 class TestErrorHandling:
