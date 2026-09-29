@@ -10,12 +10,17 @@ prompts:
     label: baseline
 
 providers:
-  - id: anthropic:messages:claude-sonnet-5-5
-    config: { temperature: 0, max_tokens: 4096 }
-  - id: anthropic:messages:claude-haiku-4-5-20251001
-    config: { temperature: 0, max_tokens: 4096 }
   - id: openai:chat:gpt-4o
     config: { temperature: 0, max_tokens: 4096 }
+  # Reasoning model: no temperature setting, and the limit covers reasoning
+  # tokens as well as the answer.
+  - id: openai:chat:gpt-5.5
+    config: { max_completion_tokens: 16000 }
+  # Disabled until an Anthropic API key is available.
+  # - id: anthropic:messages:claude-sonnet-5-5
+  #   config: { temperature: 0, max_tokens: 4096 }
+  # - id: anthropic:messages:claude-haiku-4-5-20251001
+  #   config: { temperature: 0, max_tokens: 4096 }
 
 defaultTest:
   options:
@@ -99,13 +104,16 @@ tests:
     assert:
       - type: javascript
         value: file://assertions.js:noOcEnvOutsideCredentials
+      - type: javascript
+        value: file://assertions.js:noOcEnvResolverRegistration
       - type: llm-rubric
         value: >-
           Explains that ${oc.env:...} is only enabled for credentials files by
-          default and does not put it in a parameters file as-is. Either offers
-          an alternative (such as ${runtime_params:...} with --params, or
-          globals) or, if it registers oc.env via CONFIG_LOADER_ARGS
-          custom_resolvers, notes that Kedro recommends against it.
+          default, does not put it in any parameters file, and does not
+          register oc.env for parameters via CONFIG_LOADER_ARGS
+          custom_resolvers (Kedro recommends against it; mentioning that option
+          only to advise against it is fine). Offers an alternative instead,
+          such as ${runtime_params:...} with --params, or globals.
 
   # --- Credentials location ---
   - description: Refuse to put credentials in conf/base

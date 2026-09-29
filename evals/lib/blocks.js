@@ -5,7 +5,9 @@
 // wrong does not fail an assertion that forbids that pattern.
 
 const FENCE = /^```([\w.+-]*)[^\n]*\n([\s\S]*?)^```/gm;
-const FILE_LINE = /File:\s*[`*_]*([^\s`*_]+)/g;
+// Markdown wrappers (`code`, **bold**) around the path are skipped; underscores
+// are kept because paths like src/eval_project/ contain them.
+const FILE_LINE = /File:\s*[`*]*([^\s`*]+)/g;
 // Models often ignore the `File:` instruction and label blocks with headings
 // such as `#### conf/base/parameters.yml`, so fall back to any path-like token.
 const PATH_TOKEN = /[\w.-]+(?:\/[\w.-]+)*\.(?:py|ya?ml|toml|txt|json|cfg)\b/g;
@@ -17,11 +19,17 @@ const lastMatch = (text, re, group) => {
 };
 
 // Some models put the label in a fence of its own, followed by the real block.
-const LABEL_ONLY = /^\s*File:\s*[`*_]*([^\s`*_]+)[`*_]*\s*$/;
+const LABEL_ONLY = /^\s*File:\s*[`*]*([^\s`*]+)[`*]*\s*$/;
+// Others put it in a comment on the block's first line: `# conf/base/x.yml`.
+const COMMENT_LABEL = new RegExp(
+  String.raw`^\s*(?:#|//)\s*(?:File:\s*)?(${PATH_TOKEN.source})\s*\n`,
+);
 
 // Returns [{ path, lang, code }]. `path` is, in order of preference: the last
 // `File:` line between the previous block and this one, a label-only block
-// just before, the last path-like token in that text, or null.
+// just before, a path comment on the block's first line, the last path-like
+// token in the text before the block, or null. The prose fallback is last
+// because it can pick up a file the model only mentioned in passing.
 function codeBlocks(output) {
   const blocks = [];
   let lastEnd = 0;
@@ -34,8 +42,12 @@ function codeBlocks(output) {
       labelPath = label[1];
       continue;
     }
+    const comment = match[2].match(COMMENT_LABEL);
     const path =
-      lastMatch(between, FILE_LINE, 1) || labelPath || lastMatch(between, PATH_TOKEN, 0);
+      lastMatch(between, FILE_LINE, 1) ||
+      labelPath ||
+      (comment && comment[1]) ||
+      lastMatch(between, PATH_TOKEN, 0);
     labelPath = null;
     blocks.push({ path, lang: match[1].toLowerCase(), code: match[2] });
   }

@@ -11,6 +11,15 @@ test('File: line labels the next block', () => {
   ]);
 });
 
+test('File: path keeps underscores and drops markdown wrappers', () => {
+  const out =
+    'File: `src/eval_project/settings.py`\n```python\nx\n```\n**File: conf/base/parameters_data_science.yml**\n```yaml\ny\n```';
+  assert.deepEqual(paths(out), [
+    'src/eval_project/settings.py',
+    'conf/base/parameters_data_science.yml',
+  ]);
+});
+
 test('File: line wins over other paths mentioned in prose', () => {
   const out = 'File: conf/local/credentials.yml (not conf/base/credentials.yml)\n```yaml\nx\n```';
   assert.deepEqual(paths(out), ['conf/local/credentials.yml']);
@@ -24,6 +33,22 @@ test('heading label is used when there is no File: line', () => {
 test('label in its own fence applies to the following block', () => {
   const out = '```yaml\nFile: conf/base/credentials.yml\n```\n```yaml\ndb:\n  password: hunter2\n```';
   assert.deepEqual(paths(out), ['conf/base/credentials.yml']);
+});
+
+test('path comment on the first line labels the block', () => {
+  const out = '```yaml\n# conf/base/parameters.yml\na: 1\n```\n```python\n// src/p/settings.py\nx = 1\n```';
+  assert.deepEqual(paths(out), ['conf/base/parameters.yml', 'src/p/settings.py']);
+});
+
+test('path comment wins over a file only mentioned in prose', () => {
+  const out =
+    'Register it via `CONFIG_LOADER_ARGS` in `settings.py`.\n\n```yaml\n# conf/base/parameters.yml\nb: ${oc.env:X}\n```';
+  assert.deepEqual(paths(out), ['conf/base/parameters.yml']);
+});
+
+test('ordinary first-line comment is not a label', () => {
+  const out = 'File: src/p/nodes.py\n```python\n# Train the model\nx = 1\n```';
+  assert.deepEqual(paths(out), ['src/p/nodes.py']);
 });
 
 test('label does not carry over to later unlabelled blocks', () => {

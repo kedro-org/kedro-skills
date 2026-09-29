@@ -31,6 +31,12 @@ function noOcEnvOutsideCredentials(output) {
   );
 }
 
+// Same rule: registering oc.env through CONFIG_LOADER_ARGS custom_resolvers is
+// possible, but Kedro recommends against it.
+function noOcEnvResolverRegistration(output) {
+  return forbid(output, /["']oc\.env["']\s*:/, isPython, 'oc.env registered as a custom resolver');
+}
+
 // "Credentials": never in conf/base/, which is version-controlled.
 function noCredentialsInBase(output) {
   return forbid(
@@ -55,6 +61,7 @@ module.exports = {
   noRemovedConfigLoaders,
   noBareParamInput,
   noOcEnvOutsideCredentials,
+  noOcEnvResolverRegistration,
   noCredentialsInBase,
   noPydanticV1,
 };
