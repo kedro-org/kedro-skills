@@ -1,0 +1,147 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+description: parameters-and-config skill
+
+# Each task runs twice: with the skill in the system prompt, and without it.
+# The baseline shows which failures the skill actually fixes.
+prompts:
+  - id: file://../../prompts/with-skill.json
+    label: with-skill
+  - id: file://../../prompts/baseline.json
+    label: baseline
+
+providers:
+  - id: anthropic:messages:claude-sonnet-5-5
+    config: { temperature: 0, max_tokens: 4096 }
+  - id: anthropic:messages:claude-haiku-4-5-20251001
+    config: { temperature: 0, max_tokens: 4096 }
+  - id: openai:chat:gpt-4o
+    config: { temperature: 0, max_tokens: 4096 }
+
+defaultTest:
+  options:
+    # Judge for llm-rubric assertions. A different model family from most of
+    # the providers under test, to limit self-preference bias.
+    provider: openai:chat:gpt-4o-mini
+  vars:
+    skill_content: file://../../../skills/parameters-and-config/SKILL.md
+    project_context: file://../../fixture/context.py
+
+tests:
+  # --- The only config loader ---
+  # The tasks below deliberately ask for the wrong thing, the way a user with
+  # outdated habits would. Neutral tasks passed without the skill, so they did
+  # not measure it.
+  - description: Refuse a removed config loader when asked for it
+    vars:
+      project_files: pyproject.toml
+      task: >-
+        I want to share a bucket name across catalog files with ${bucket}
+        style templating. Set the project up to use TemplatedConfigLoader with
+        a globals.yml file.
+    assert:
+      - type: javascript
+        value: file://assertions.js:noRemovedConfigLoaders
+      - type: llm-rubric
+        value: >-
+          Tells the user that TemplatedConfigLoader was removed (in Kedro
+          0.19) and does not configure it. Uses OmegaConfigLoader instead, for
+          example with a globals file referenced via ${globals:...}.
+
+  # --- The params: prefix ---
+  - description: "Correct a bare parameter input to params:"
+    vars:
+      # No pipeline.py: it already shows "params:model_options", which the
+      # model copies whether or not it read the skill.
+      project_files: >-
+        conf/base/parameters_data_science.yml,
+        src/eval_project/pipelines/data_science/nodes.py
+      task: >-
+        I added fit_intercept: true to parameters_data_science.yml at the top
+        level, and since top-level parameters are matched to node inputs by
+        name, I just need "fit_intercept" in the inputs list. Update
+        train_model to take it as an argument and show me the new
+        train_model_node definition.
+    assert:
+      - type: javascript
+        value: file://assertions.js:noBareParamInput
+      - type: llm-rubric
+        value: >-
+          The train_model_node inputs pass the parameter as
+          "params:fit_intercept", not as a bare "fit_intercept", and the answer
+          points out that without the "params:" prefix Kedro would look for a
+          dataset of that name.
+
+  # --- Runtime parameters: destructive merge ---
+  - description: Warn that --params replaces the whole subtree
+    vars:
+      project_files: conf/base/parameters_data_science.yml
+      task: >-
+        For one run, I want to try test_size 0.3 without editing any files.
+        What command should I use?
+    assert:
+      - type: icontains
+        value: --params
+      - type: llm-rubric
+        value: >-
+          Warns that overriding model_options.test_size with --params replaces
+          the entire model_options subtree by default, so random_state and
+          features would be lost, and offers a way to avoid it (passing the full
+          subtree, a ${runtime_params:...} resolver in the YAML, or changing
+          the merge strategy in CONFIG_LOADER_ARGS).
+
+  # --- oc.env is credentials-only ---
+  - description: Do not use oc.env in parameters
+    vars:
+      project_files: conf/base/parameters.yml, src/eval_project/settings.py
+      task: >-
+        Our output bucket name is in the DATA_BUCKET environment variable.
+        Expose it as a parameter called output_bucket.
+    assert:
+      - type: javascript
+        value: file://assertions.js:noOcEnvOutsideCredentials
+      - type: llm-rubric
+        value: >-
+          Explains that ${oc.env:...} is only enabled for credentials files by
+          default and does not put it in a parameters file as-is. Either offers
+          an alternative (such as ${runtime_params:...} with --params, or
+          globals) or, if it registers oc.env via CONFIG_LOADER_ARGS
+          custom_resolvers, notes that Kedro recommends against it.
+
+  # --- Credentials location ---
+  - description: Refuse to put credentials in conf/base
+    vars:
+      project_files: conf/base/catalog.yml, conf/local/credentials.yml
+      task: >-
+        Add credentials for our Postgres database (user: admin, password:
+        hunter2, host: db.internal) to conf/base/credentials.yml so everyone on
+        the team gets them when they pull.
+    assert:
+      - type: javascript
+        value: file://assertions.js:noCredentialsInBase
+      - type: llm-rubric
+        value: >-
+          Declines to put the credentials under conf/base/, explaining that it
+          is version-controlled so the password would be committed. Puts them
+          in conf/local/credentials.yml (or suggests environment variables via
+          ${oc.env:...} there) and references them from the catalog by key.
+
+  # --- Parameter validation ---
+  - description: Opt-in validation with Pydantic v2
+    vars:
+      project_files: >-
+        conf/base/parameters_data_science.yml,
+        src/eval_project/pipelines/data_science/pipeline.py,
+        src/eval_project/pipelines/data_science/nodes.py
+      task: >-
+        Make Kedro reject the run before anything executes if test_size is not
+        between 0.1 and 0.5.
+    assert:
+      - type: javascript
+        value: file://assertions.js:noPydanticV1
+      - type: llm-rubric
+        value: >-
+          Enables Kedro's built-in parameter validation by type-hinting the
+          params input of split_data with a Pydantic v2 model (or dataclass)
+          that constrains test_size, rather than hand-written checks inside the
+          node or a hook. Treats the parameter as a model instance in the node
+          body (attribute access, not dict indexing), or explains the change.
