@@ -46,7 +46,9 @@ npx promptfoo@0.123.1 view
 
 It runs at `http://localhost:15500` and shows the full responses, every assertion with the judge's reasoning, and past runs, which promptfoo keeps in `~/.promptfoo`. To save a report, add `-o results.html` or `-o results.json` to `ARGS`.
 
-A useful test passes with the skill and fails on baseline. If it fails both, the model ignored the skill. If it passes both, the test isn't measuring the skill. `make` exits non-zero whenever any assertion fails, including the expected baseline failures, so read the table rather than the exit code.
+A test that passes with the skill and fails on baseline shows what the skill fixes. If it fails both, the model ignored the skill. If it passes both, the skill isn't needed for that case, but the test still catches a skill that makes the answer worse.
+
+`make eval` and `make eval-skill` exit non-zero only when a with-skill test fails or errors; baseline failures are expected and don't count. After the promptfoo table, `evals/lib/gate.js` prints the with-skill failures and how many baseline results passed. The full results are saved to `evals/results/<skill>.json` (git-ignored; override the directory with `EVAL_RESULTS=path`).
 
 ## Layout
 
