@@ -34,8 +34,8 @@ conf/local/parameters.yml         # environment override (local takes precedence
 Kedro merges all matching files. Within the **same** environment, defining the
 same full key path in two files (for example `model_options.learning_rate`)
 raises `ValueError`; different sub-keys under the same top-level key are fine.
-Across environments, `local` overrides `base` (see
-[Configuration environments](#configuration-environments)).
+Across environments, `local` overrides `base` (see "Configuration
+environments" below).
 
 Keys starting with `_` are **not** hidden in parameters. Unlike the catalog,
 they stay in the merged result, so nodes can read them (for example with
