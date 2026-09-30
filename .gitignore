@@ -219,3 +219,6 @@ __marimo__/
 
 # Eval helpers (the Python template above ignores every lib/ directory)
 !evals/lib/
+
+# Eval run output (make eval / eval-skill)
+evals/results/
