@@ -12,6 +12,15 @@ const FILE_LINE = /File:\s*[`*]*([^\s`*]+)/g;
 // such as `#### conf/base/parameters.yml`, so fall back to any path-like token.
 const PATH_TOKEN = /[\w.-]+(?:\/[\w.-]+)*\.(?:py|ya?ml|toml|txt|json|cfg)\b/g;
 
+// A block introduced by a line like "Do **not** use:" is a counter-example,
+// not a proposal. Markdown emphasis is stripped before matching.
+const ANTI_EXAMPLE = /^\s*(?:do\s+not|don't|never|avoid)\b(?!\s+forget)[^\n]*:\s*$/i;
+
+const isAntiExample = (between) => {
+  const lines = between.replace(/[*_`]/g, '').split('\n').filter((l) => l.trim());
+  return lines.length > 0 && ANTI_EXAMPLE.test(lines[lines.length - 1]);
+};
+
 const lastMatch = (text, re, group) => {
   let found = null;
   for (const m of text.matchAll(re)) found = m[group];
@@ -25,7 +34,7 @@ const COMMENT_LABEL = new RegExp(
   String.raw`^\s*(?:#|//)\s*(?:File:\s*)?(${PATH_TOKEN.source})\s*\n`,
 );
 
-// Returns [{ path, lang, code }]. `path` is, in order of preference: the last
+// Returns [{ path, lang, code, antiExample }]. `path` is, in order of preference: the last
 // `File:` line between the previous block and this one, a label-only block
 // just before, a path comment on the block's first line, the last path-like
 // token in the text before the block, or null. The prose fallback is last
@@ -49,14 +58,22 @@ function codeBlocks(output) {
       (comment && comment[1]) ||
       lastMatch(between, PATH_TOKEN, 0);
     labelPath = null;
-    blocks.push({ path, lang: match[1].toLowerCase(), code: match[2] });
+    blocks.push({
+      path,
+      lang: match[1].toLowerCase(),
+      code: match[2],
+      antiExample: isAntiExample(between),
+    });
   }
   return blocks;
 }
 
-// Fails if any block selected by `where` matches `pattern`.
+// Fails if any block selected by `where` matches `pattern`. Counter-example
+// blocks are skipped.
 function forbid(output, pattern, where, what) {
-  const hits = codeBlocks(output).filter((b) => where(b) && pattern.test(b.code));
+  const hits = codeBlocks(output).filter(
+    (b) => !b.antiExample && where(b) && pattern.test(b.code),
+  );
   if (hits.length === 0) {
     return { pass: true, score: 1, reason: `No ${what}` };
   }

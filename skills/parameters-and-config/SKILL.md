@@ -31,12 +31,15 @@ conf/base/parameters_model.yml    # additional — any name starting with "param
 conf/local/parameters.yml         # environment override (local takes precedence)
 ```
 
-Kedro merges all matching files. Within the **same** environment, duplicate
-sub-keys raise `ValueError`. Across environments, `local` overrides `base`.
+Kedro merges all matching files. Within the **same** environment, defining the
+same full key path in two files (for example `model_options.learning_rate`)
+raises `ValueError`; different sub-keys under the same top-level key are fine.
+Across environments, `local` overrides `base` (see
+[Configuration environments](#configuration-environments)).
 
-Keys starting with `_` are hidden — they do not appear in the merged result and
-never trigger duplicate-key errors. Use them as YAML anchors or internal
-template variables.
+Keys starting with `_` are **not** hidden in parameters. Unlike the catalog,
+they stay in the merged result, so nodes can read them (for example with
+`params:_defaults`). Top-level `_` keys are exempt from duplicate-key errors.
 
 ## Using parameters in pipelines — the params: prefix
 
@@ -70,8 +73,13 @@ The `--params` flag sets values at runtime:
 kedro run --params=step_size=0.5,learning_rate=0.01
 ```
 
-**Destructive merge:** by default, runtime parameters replace the **entire
-subtree** at the matching top-level key, discarding sibling values. For example:
+A dotted key overrides one nested value.
+
+**Destructive merge when the run environment has parameters:** Kedro merges
+`--params` into each environment separately, then merges the environments
+destructively by top-level key. If the run environment (`conf/local` by default)
+contains **any** parameters file, an override of a nested key replaces the
+**entire subtree** at its top-level key, discarding sibling values:
 
 ```yaml
 # conf/base/parameters.yml
@@ -79,15 +87,34 @@ model_options:
   learning_rate: 0.01
   test_data_ratio: 0.2
   num_iterations: 10000
+
+# conf/local/parameters.yml — any content, even an unrelated key
+features:
+  rate: 123
 ```
 
 ```bash
 kedro run --params="model_options.learning_rate=0.05"
 ```
 
-Result: `model_options` becomes `{learning_rate: 0.05}` — `test_data_ratio`
-and `num_iterations` are gone. This catches users by surprise. The merge
-strategy can be changed via `CONFIG_LOADER_ARGS` in `settings.py`.
+Result: `model_options` becomes `{learning_rate: 0.05}`. The values
+`test_data_ratio` and `num_iterations` are gone, which catches users by
+surprise. If `conf/local` has no parameters file, the same command keeps the
+siblings.
+
+**Whenever you suggest `--params` with a nested key**, check whether the run
+environment has a parameters file. If it does, or you cannot tell, say that the
+sibling keys will be lost and give one of the fixes below. Do not give the
+bare command on its own.
+
+To keep sibling values, use one of these:
+- Set a soft merge strategy for parameters in `settings.py`:
+  ```python
+  CONFIG_LOADER_ARGS = {"merge_strategy": {"parameters": "soft"}}
+  ```
+- Declare the override point in YAML with `${runtime_params:...}` (next
+  section).
+- Pass the whole subtree on the command line.
 
 ### The runtime_params resolver (different from --params)
 
@@ -175,9 +202,26 @@ dev_s3:
     aws_secret_access_key: ${oc.env:AWS_SECRET_ACCESS_KEY}
 ```
 
-**Do NOT use `${oc.env:VAR}` in `parameters.yml` or `catalog.yml`** — it will
-raise an error unless you explicitly register it via `CONFIG_LOADER_ARGS` in
-`settings.py`, which Kedro recommends against.
+**Do NOT use `${oc.env:VAR}` in parameters, catalog or globals files.** It
+raises `UnsupportedInterpolationType`. Do not register `oc.env` as a custom
+resolver in `settings.py` to work around this either: Kedro's docs say they "do
+not recommend using environment variables for configurations other than
+credentials."
+
+To get an environment variable into a parameter, declare a runtime override
+point and let the shell expand the variable:
+
+```yaml
+# conf/base/parameters.yml
+output_bucket: "${runtime_params:output_bucket, default-bucket}"
+```
+
+```bash
+kedro run --params="output_bucket=$DATA_BUCKET"
+```
+
+If the value is a secret, it belongs in `conf/local/credentials.yml` instead,
+where `${oc.env:...}` works.
 
 ## Parameter validation
 
@@ -202,14 +246,23 @@ Key behaviours:
 - **Fail-fast**: validation runs before any node executes.
 - **Pydantic v2+ only**: uses `model_validate` (v1 is not supported).
 - **Dataclasses**: basic type checking, no field constraints.
-- **Limitation**: validates across **all** registered pipelines, not just the
-  target — an error in an unrelated pipeline blocks the run.
+- **Scope** (Kedro 1.4.0+): `kedro run --pipeline <name>` validates only the
+  parameters used by the pipelines being run. A default run (`__default__`)
+  validates every registered pipeline, and so does reading `context.params`
+  outside a run (in hooks or notebooks). An invalid parameter in an unrelated
+  pipeline therefore blocks a default run but not a scoped one.
 
 ## Configuration environments
 
-Kedro loads `conf/base/` first, then `conf/local/` on top (local wins on
-conflicts). You can create custom environments (e.g. `conf/production/`) and
-select them with `kedro run --env=production`.
+Kedro loads `conf/base/` first, then `conf/local/` on top. You can create
+custom environments (e.g. `conf/production/`) and select them with
+`kedro run --env=production`.
 
-For parameters specifically: duplicate **sub-keys** within the same environment
-raise `ValueError` (stricter than catalog, which checks only top-level keys).
+The merge is **destructive by top-level key**: if `conf/local/parameters.yml`
+defines `model_options`, it replaces the whole `model_options` block from
+`conf/base`, not only the keys it repeats. Set
+`CONFIG_LOADER_ARGS = {"merge_strategy": {"parameters": "soft"}}` in
+`settings.py` to merge nested keys instead.
+
+For parameters specifically, duplicate-key checks within one environment use
+the full key path (stricter than catalog, which checks only top-level keys).

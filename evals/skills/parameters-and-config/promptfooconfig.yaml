@@ -77,22 +77,26 @@ tests:
           dataset of that name.
 
   # --- Runtime parameters: destructive merge ---
+  # The subtree is only lost when the run environment has a parameters file
+  # (the fixture's conf/local has none), so the task says it does.
   - description: Warn that --params replaces the whole subtree
     vars:
       project_files: conf/base/parameters_data_science.yml
       task: >-
-        For one run, I want to try test_size 0.3 without editing any files.
-        What command should I use?
+        I keep a few personal overrides in conf/local/parameters.yml. For one
+        run, I want to try test_size 0.3 without editing any files. What
+        command should I use?
     assert:
       - type: icontains
         value: --params
       - type: llm-rubric
         value: >-
-          Warns that overriding model_options.test_size with --params replaces
-          the entire model_options subtree by default, so random_state and
-          features would be lost, and offers a way to avoid it (passing the full
-          subtree, a ${runtime_params:...} resolver in the YAML, or changing
-          the merge strategy in CONFIG_LOADER_ARGS).
+          Warns that, because conf/local has a parameters file, overriding
+          model_options.test_size with --params replaces the entire
+          model_options subtree, so random_state and features would be lost.
+          Offers a way to avoid it: passing the full subtree, a
+          ${runtime_params:...} resolver in the YAML, or a soft merge_strategy
+          for parameters in CONFIG_LOADER_ARGS.
 
   # --- oc.env is credentials-only ---
   - description: Do not use oc.env in parameters
@@ -107,13 +111,16 @@ tests:
       - type: javascript
         value: file://assertions.js:noOcEnvResolverRegistration
       - type: llm-rubric
+        # The user never mentions oc.env, so explaining why it isn't used is
+        # not required; getting it wrong is.
         value: >-
-          Explains that ${oc.env:...} is only enabled for credentials files by
-          default, does not put it in any parameters file, and does not
+          Does not put ${oc.env:...} in any parameters file and does not
           register oc.env for parameters via CONFIG_LOADER_ARGS
-          custom_resolvers (Kedro recommends against it; mentioning that option
-          only to advise against it is fine). Offers an alternative instead,
-          such as ${runtime_params:...} with --params, or globals.
+          custom_resolvers (mentioning that option only to advise against it
+          is fine). Instead gives a working way to set output_bucket from
+          DATA_BUCKET, such as ${runtime_params:...} in the YAML with --params
+          passing $DATA_BUCKET from the shell. If it mentions oc.env at all, it
+          does not claim oc.env works in parameters files by default.
 
   # --- Credentials location ---
   - description: Refuse to put credentials in conf/base
@@ -153,3 +160,43 @@ tests:
           that constrains test_size, rather than hand-written checks inside the
           node or a hook. Treats the parameter as a model instance in the node
           body (attribute access, not dict indexing), or explains the change.
+
+  # --- Validation scope (Kedro 1.4.0+) ---
+  - description: Validation is scoped to the pipelines being run
+    vars:
+      project_files: >-
+        src/eval_project/pipeline_registry.py,
+        src/eval_project/pipelines/data_science/pipeline.py
+      task: >-
+        The data_processing pipeline has a Pydantic-validated parameter that is
+        currently invalid, and I don't have time to fix it. I only need to run
+        data_science today. Will kedro run --pipeline data_science fail because
+        of it? And what about a plain kedro run?
+    assert:
+      - type: llm-rubric
+        value: >-
+          Says that kedro run --pipeline data_science will not fail, because
+          parameter validation only covers the pipelines being run, and that a
+          plain kedro run (the __default__ pipeline) validates every pipeline
+          and so would fail before any node executes.
+
+  # --- Underscore keys are not hidden in parameters ---
+  - description: Underscore keys stay visible in parameters
+    vars:
+      project_files: >-
+        conf/base/parameters_data_science.yml,
+        src/eval_project/pipelines/data_science/pipeline.py
+      task: >-
+        I want to add a _defaults block to parameters_data_science.yml with
+        max_depth: 5. Since keys starting with an underscore are hidden from
+        the merged config like in the catalog, I assume I need to copy it into
+        a public key to use it in a node. Set that up and pass max_depth to
+        train_model.
+    assert:
+      - type: llm-rubric
+        value: >-
+          Corrects the premise: underscore-prefixed keys are hidden in catalog
+          files but not in parameters, so the _defaults block stays in the
+          merged parameters and no copy into a public key is needed. Passes
+          the value to the node with a params: input, for example
+          "params:_defaults.max_depth" or "params:_defaults".

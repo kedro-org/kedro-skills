@@ -77,8 +77,8 @@ Suites live here rather than under `skills/` because `skills/` is packaged into 
 2. Write one test per rule in the `SKILL.md`.
 3. Write tasks where the user asks for the wrong thing, for example "set up TemplatedConfigLoader", and leave out fixture files that already show the right pattern. Neutral tasks tend to pass even without the skill.
 4. Set `project_files` as a comma-separated string, not a YAML list (promptfoo turns lists into one test per item).
-5. Use `forbid()` from `lib/blocks.js` for deterministic checks (it only looks at code blocks, so explaining a wrong pattern does not fail) and add an `llm-rubric`.
-6. Run with `ARGS="--filter-providers gpt-4o"` and confirm each test fails on baseline.
+5. Use `forbid()` from `lib/blocks.js` for deterministic checks (it only looks at code blocks and skips blocks introduced by a line like "Do not use:", so explaining a wrong pattern does not fail) and add an `llm-rubric`.
+6. Run with `ARGS="--filter-providers gpt-4o"`. Tests that fail on baseline show what the skill fixes. A test the baseline passes is still worth keeping: it catches a skill that makes the answer worse, for example by stating a wrong rule.
 7. If a model labels code blocks in a format `blocks.js` misses, add a case to `lib/blocks.test.js`.
 
 ## Refreshing the fixture

@@ -61,6 +61,23 @@ test('forbid ignores patterns mentioned only in prose', () => {
   assert.equal(forbid(out, /TemplatedConfigLoader/, () => true, 'x').pass, true);
 });
 
+test('forbid skips a block introduced as a counter-example', () => {
+  const out =
+    'Use OmegaConfigLoader.\n\nDo **not** use:\n\n```python\nfrom kedro.config import TemplatedConfigLoader\n```';
+  assert.equal(forbid(out, /TemplatedConfigLoader/, () => true, 'x').pass, true);
+});
+
+test('"do not forget" does not make a block a counter-example', () => {
+  const out = "Don't forget to add:\n```python\nfrom kedro.config import TemplatedConfigLoader\n```";
+  assert.equal(forbid(out, /TemplatedConfigLoader/, () => true, 'x').pass, false);
+});
+
+test('a negative sentence earlier in the prose does not exempt the block', () => {
+  const out =
+    'Do not use ConfigLoader:\nit was removed. Instead, set this up:\n```python\nfrom kedro.config import TemplatedConfigLoader\n```';
+  assert.equal(forbid(out, /TemplatedConfigLoader/, () => true, 'x').pass, false);
+});
+
 test('forbid reports the offending path', () => {
   const out = '#### conf/base/parameters.yml\n```yaml\nb: ${oc.env:X}\n```';
   const result = forbid(out, /oc\.env/, (b) => /parameters/.test(b.path || ''), 'oc.env');
