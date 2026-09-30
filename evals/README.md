@@ -8,7 +8,7 @@ The evals measure whether models follow a skill. They can't tell you whether the
 
 - Node >= 22.22 (promptfoo 0.123.1 requires it; install via `nvm install 22`)
 - Python on PATH (used by `fixture/context.py` to build the project context variable)
-- API keys: `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` (OpenAI is also used by the judge, `gpt-4o-mini`)
+- API keys for the models you run. The default judge is OpenAI's `gpt-4o-mini`, so without an OpenAI key, pick another judge with `EVAL_JUDGE` (see below).
 - `uv` is only needed to refresh the fixture
 
 `npx` fetches promptfoo on the first run, so there's nothing to install.
@@ -35,6 +35,18 @@ make eval ARGS="--no-cache"
 ```
 
 promptfoo caches responses; use `--no-cache` after changing prompts or tasks. Avoid `$` in `ARGS` because Make expands it.
+
+To run only the models you have keys for, filter by provider id. To grade with a different judge, set `EVAL_JUDGE` to a promptfoo provider id:
+
+```bash
+make eval-skill SKILL=parameters-and-config \
+  ARGS="--filter-providers claude" \
+  EVAL_JUDGE=anthropic:messages:claude-haiku-4-5-20251001
+```
+
+The Anthropic providers in `parameters-and-config` are commented out for now; uncomment them in its `promptfooconfig.yaml` to run this example.
+
+`EVAL_JUDGE` overrides the judge set in each suite's `defaultTest.options.provider`. A judge from the same model family as the model under test tends to favour its answers, so use a different family where you can.
 
 ## Reading the results
 

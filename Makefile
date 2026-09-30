@@ -29,10 +29,15 @@ PROMPTFOO ?= npx -y promptfoo@0.123.1
 EVAL_ENV ?= evals/.env
 EVAL_ENV_FLAG = $(if $(wildcard $(EVAL_ENV)),--env-file $(EVAL_ENV))
 EVAL_RESULTS ?= evals/results
+# Judge for llm-rubric assertions, as a promptfoo provider id, e.g.
+#   make eval-skill SKILL=parameters-and-config EVAL_JUDGE=anthropic:messages:claude-haiku-4-5-20251001
+# Empty keeps each suite's defaultTest.options.provider.
+EVAL_JUDGE ?=
+EVAL_JUDGE_FLAG = $(if $(EVAL_JUDGE),--grader $(EVAL_JUDGE))
 # promptfoo exits 100 when any test fails, baseline included. Failed tests exit
 # 0 instead, and evals/lib/gate.js fails the run on with-skill results only.
 # Config and provider errors still exit non-zero.
-EVAL_RUN = PROMPTFOO_FAILED_TEST_EXIT_CODE=0 $(PROMPTFOO) eval $(EVAL_ENV_FLAG) $(ARGS)
+EVAL_RUN = PROMPTFOO_FAILED_TEST_EXIT_CODE=0 $(PROMPTFOO) eval $(EVAL_ENV_FLAG) $(EVAL_JUDGE_FLAG) $(ARGS)
 
 eval-check-node:
 	@node -e 'const [a,b]=process.versions.node.split(".").map(Number); if (a<22||(a===22&&b<22)) { console.error("Skill evals need Node >= 22.22, found " + process.versions.node); process.exit(1) }'
