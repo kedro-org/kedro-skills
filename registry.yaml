@@ -13,6 +13,24 @@ skills:
       - copilot
       - claude
       - codex
+
+  - id: parameters-and-config
+    category: data
+    description: >-
+      Kedro parameters and credentials guidance for conf/**/parameters*.yml and
+      conf/**/credentials*.yml files. Use when editing parameters, credentials,
+      or working with configuration interpolation and runtime overrides.
+    paths:
+      - "conf/**/parameters*.yml"
+      - "conf/**/parameters*.yaml"
+      - "conf/**/credentials*.yml"
+      - "conf/**/credentials*.yaml"
+    ide_support:
+      - cursor
+      - copilot
+      - claude
+      - codex
+
   - id: llm-context-nodes
     category: genai
     description: >-
