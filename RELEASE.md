@@ -1,4 +1,5 @@
 # Upcoming Release
+
 ## Major features and improvements
 - Added the `llm-context-nodes` skill: guidance for the `llm_context_node` API, activated on `src/**/pipelines/**/*.py`.
 - Added `parameters-and-config` skill, offering guidance for writing Kedro parameter and credential files.
@@ -7,6 +8,7 @@
 - The uninstall telemetry event now includes `success` and `drift_detected` fields.
 
 # Release 0.2.0
+
 ## Major features and improvements
 - Added anonymous usage telemetry for the `install`, `update` and `uninstall` commands, following the standard `kedro-telemetry` consent flow.
 ## Bug fixes and other changes
