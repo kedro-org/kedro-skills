@@ -55,6 +55,7 @@ class OperationResult:
     requested_ides: list[str]
     written: list[FileRecord] = field(default_factory=list)
     refused: list[DriftedFile] = field(default_factory=list)
+    kept: list[DriftedFile] = field(default_factory=list)
 
 
 def _extract_block(content: str, block_id: str) -> str | None:
@@ -241,9 +242,20 @@ def update_skills(project_root: Path, force: bool = False) -> list[OperationResu
 
 
 def uninstall_skill(
-    skill_id: str, project_root: Path, force: bool = False
+    skill_id: str,
+    project_root: Path,
+    force: bool = False,
+    keep_modified: bool = False,
 ) -> OperationResult:
-    """Remove all managed files for *skill_id* from the project."""
+    """Remove all managed files for *skill_id* from the project.
+
+    When drifted files exist and neither *force* nor *keep_modified* is set,
+    returns early with ``refused`` populated and no files touched.
+
+    *force* deletes every file regardless of drift.  *keep_modified* deletes
+    non-drifted files and drops the drifted ones from state so they become
+    ordinary unmanaged files in the user's repo.
+    """
     from kedro_skills import state  # noqa: PLC0415
 
     installed = state.read(project_root)
@@ -258,40 +270,44 @@ def uninstall_skill(
     requested = [i for i in skill.ide_support if i in _VALID_IDES]
 
     written: list[FileRecord] = []
-    refused: list[DriftedFile] = []
+    kept: list[DriftedFile] = []
 
-    drifted_set: set[str] = set()
-    if not force:
-        for d in check_drift_for_skill(project_root, skill_id):
-            drifted_set.add(d.path)
-            refused.append(d)
-
-    for rec in skill_state.files:
-        if rec.path in drifted_set:
-            continue
-        _remove_file_record(rec, project_root)
-        written.append(rec)
-
-    if refused:
-        remaining = [rec for rec in skill_state.files if rec.path in drifted_set]
-        installed.skills[skill_id] = SkillState(
-            version=skill_state.version, files=remaining
-        )
-        state.write(project_root, installed)
+    if force:
+        for rec in skill_state.files:
+            _remove_file_record(rec, project_root)
+            written.append(rec)
     else:
-        del installed.skills[skill_id]
-        state_path = project_root / state.STATE_FILENAME
-        if installed.skills:
-            state.write(project_root, installed)
-        elif state_path.is_file():
-            state_path.unlink()
+        drifted_list = check_drift_for_skill(project_root, skill_id)
+        drifted_map = {d.path: d for d in drifted_list}
+
+        if drifted_map and not keep_modified:
+            return OperationResult(
+                skill_id=skill_id,
+                operation="uninstall",
+                requested_ides=requested,
+                refused=drifted_list,
+            )
+
+        for rec in skill_state.files:
+            if rec.path in drifted_map:
+                kept.append(drifted_map[rec.path])
+            else:
+                _remove_file_record(rec, project_root)
+                written.append(rec)
+
+    del installed.skills[skill_id]
+    state_path = project_root / state.STATE_FILENAME
+    if installed.skills:
+        state.write(project_root, installed)
+    elif state_path.is_file():
+        state_path.unlink()
 
     return OperationResult(
         skill_id=skill_id,
         operation="uninstall",
         requested_ides=requested,
         written=written,
-        refused=refused,
+        kept=kept,
     )
 
 
@@ -302,7 +318,7 @@ def _remove_file_record(rec: FileRecord, project_root: Path) -> None:
     """Remove a single managed file or AGENTS.md block."""
     abs_path = project_root / rec.path
     if rec.kind == "agents_md_block" and rec.block_id:
-        _remove_agents_md_block(abs_path, rec.block_id)
+        _remove_agents_md_block(abs_path, rec.block_id, project_root)
     elif abs_path.is_file():
         abs_path.unlink()
         _cleanup_empty_parents(abs_path.parent, project_root)
@@ -323,7 +339,9 @@ def _cleanup_empty_parents(directory: Path, project_root: Path) -> None:
         current = current.parent
 
 
-def _remove_agents_md_block(agents_md_path: Path, block_id: str) -> None:
+def _remove_agents_md_block(
+    agents_md_path: Path, block_id: str, project_root: Path
+) -> None:
     """Remove the managed block from AGENTS.md; delete the file if it becomes empty."""
     if not agents_md_path.is_file():
         return
@@ -340,7 +358,7 @@ def _remove_agents_md_block(agents_md_path: Path, block_id: str) -> None:
     stripped = new_content.strip()
     if not stripped or _is_header_only(stripped):
         agents_md_path.unlink()
-        _cleanup_empty_parents(agents_md_path.parent, agents_md_path.parent)
+        _cleanup_empty_parents(agents_md_path.parent, project_root)
     else:
         agents_md_path.write_text(new_content, encoding="utf-8")
 

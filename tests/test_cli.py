@@ -193,7 +193,14 @@ class TestTelemetryEvents:
         result = CliRunner().invoke(skills, ["uninstall", "catalog-config"])
         assert result.exit_code == 0
         assert sent_events == [
-            ("kedro_skills_uninstall", {"skill_id": "catalog-config"})
+            (
+                "kedro_skills_uninstall",
+                {
+                    "skill_id": "catalog-config",
+                    "success": True,
+                    "drift_detected": False,
+                },
+            )
         ]
 
     def test_list_sends_no_event(
