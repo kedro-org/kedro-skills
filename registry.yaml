@@ -46,3 +46,23 @@ skills:
       - copilot
       - claude
       - codex
+
+  - id: explain-project
+    category: onboarding
+    description: >-
+      Guidance for explaining an existing Kedro project, covering its structure,
+      registered pipelines, data flow, Data Catalog, parameters, configuration,
+      credentials, hooks and Kedro-Viz. Use when asked to explain, summarise or
+      review how a project is built, to onboard onto it, or to answer a question
+      about it, such as where a dataset, parameter or piece of logic lives, whether
+      an output is saved, which Kedro version it uses, which credentials it needs,
+      or how to view it or its experiment tracking in Kedro-Viz. Adds nothing when
+      writing or changing code, or for a full best-practice audit.
+    paths:
+      - "src/**/pipeline_registry.py"
+      - "src/**/settings.py"
+    ide_support:
+      - cursor
+      - copilot
+      - claude
+      - codex
