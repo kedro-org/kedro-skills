@@ -16,7 +16,7 @@ description: >-
 
 **Use this skill when the user wants to understand a Kedro project as it is: an overview, a walkthrough of one pipeline, where a dataset comes from or goes, whether an output is saved, what a parameter controls, which versions or credentials it needs, or how to see it in Kedro-Viz. If the request is only to write, change, fix or test code, or to audit the project against best practices, stop here: this skill has nothing to add and must not be mentioned. In a mixed request, use it for the explanation part only.**
 
-Answer in the conversation, and save an overview to a file only if the user asks. Flag concrete problems you find without fixing them. Explaining is read-only: do not create, edit or delete project files, install packages without asking, or run the pipeline, call node functions or load datasets (Rule 7).
+Answer in the conversation, and save an overview to a file only if the user asks. Flag concrete problems you find without fixing them. Apart from an overview file the user asks for, explaining is read-only: do not create, edit or delete project files, install packages without asking, or run the pipeline, call node functions or load datasets (Rule 7).
 
 For the rules behind catalog entries, parameters or LLM context nodes, follow the `catalog-config`, `parameters-and-config` or `llm-context-nodes` skill if it is installed.
 
@@ -26,7 +26,7 @@ For the rules behind catalog entries, parameters or LLM context nodes, follow th
 
 In `pyproject.toml`, `[tool.kedro]` gives `package_name` and `source_dir` (usually `src`); below, `src/<package>/` stands for that location. Its `tools` and `example_pipeline` keys only record `kedro new` options: a starter says `example_pipeline = "False"` and still ships pipelines. If the repository holds several Kedro projects, explain the one the request or working directory points to.
 
-In `src/<package>/settings.py`, `CONF_SOURCE` can move the configuration folder, and `CONFIG_LOADER_ARGS` can rename the environments (`base_env`, `default_run_env`), change which files are read (`config_patterns`) or set how environments merge (`merge_strategy`). By default an environment replaces each top-level key it defines; `soft` merges nested keys instead. Runtime parameters (`--params`, `runtime_params`) change only the keys they name. The template sets `OmegaConfigLoader`, `base_env` and `default_run_env` itself, so only other values are customisations. Explain the environment the user names, otherwise the default run environment, and say which one you explained.
+In `src/<package>/settings.py`, `CONF_SOURCE` can move the configuration folder, and `CONFIG_LOADER_ARGS` can rename the environments (`base_env`, `default_run_env`), change which files are read (`config_patterns`) or set how environments merge (`merge_strategy`). By default an environment replaces each top-level key it defines; `soft` merges nested keys instead. Runtime parameters (`--params`, `runtime_params`) are applied to the run environment before it merges with base: under the default merge, overriding `model.factor` replaces base's whole `model` group if that environment has a parameters file; with `soft`, or no file there, the other keys survive. The template sets `OmegaConfigLoader`, `base_env` and `default_run_env` itself, so only other values are customisations. Explain the environment the user names, otherwise the default run environment, and say which one you explained.
 
 ## Check the installed versions first
 
@@ -38,7 +38,7 @@ python -c "import sys, importlib.metadata as m; print(sys.executable); print({p:
 
 The first line shows which interpreter answered, and it may not be the project's. You are probably in the wrong environment if `kedro` is `None`, the path is not inside an environment (`/envs/`, `/.venv/`, `/virtualenvs/`), or the version does not meet the project's pin in `requirements.txt` or `pyproject.toml`. Then re-run it with the project's interpreter (a `.venv` in the project, `<env-path>/bin/python` or `conda run -n <env> python`), and ask if you cannot tell which that is. If none works, report the pin and say the installed version is unverified. Take every version in your answer from the same interpreter. Never infer what is installed from the user's words or a failed command: a user who cannot install the project's dependencies usually still has Kedro.
 
-`kedro_init_version` in `pyproject.toml` (the snapshot's `metadata.kedro_version`) is the version the project was created with: report it beside the installed one and mention any gap, since an older template may lack `raise_errors=True` or the inspection API.
+`kedro_init_version` in `pyproject.toml` (the snapshot's `metadata.kedro_version`) is the version the project was created with: report it beside the installed one and mention any gap.
 
 - **1.6.0 or later**: the full snapshot below.
 - **1.4.0 to 1.5.x**: snapshot nodes have no `func_name` or `source`; take function names and locations from the pipeline files.
@@ -48,7 +48,7 @@ The first line shows which interpreter answered, and it may not be the project's
 
 For a walkthrough, take a snapshot, check it against the files, then read the code. For a focused question, answer from the files with just what it needs: for a dataset, its producers back to the raw inputs, naming each one's catalog type and file path, then its storage and its consumers; for a parameter, where it is set, what overrides it and which nodes read it; for a pipeline, its registration, nodes, inputs and outputs.
 
-**1. Ask before loading the project's code.** A snapshot imports the project's modules, builds its pipelines and loads its configuration. It runs no node and loads no data, but import-time code, a custom config loader or the logging setup can still have side effects (the template's logging writes `info.log`). Ask before the first command that loads the project, unless the user already agreed in this conversation, for example by saying you may run commands that load the project's code. A request for an explanation is not agreement, and a tool's approval prompt is not enough, because some tools run commands without one. Work from the files meanwhile, and if the user says no, use "Without the snapshot".
+**1. Ask before loading the project's code.** A snapshot imports the project's modules, builds its pipelines and loads its configuration. It runs no node and loads no data, but import-time code, a custom config loader or the logging setup can still have side effects. Ask before the first command that loads the project, unless the user already agreed in this conversation, for example by saying you may run commands that load the project's code. A request for an explanation is not agreement, and a tool's approval prompt is not enough, because some tools run commands without one. Work from the files meanwhile, and if the user says no, use "Without the snapshot".
 
 **2. Take the snapshot once.** From the project root, with the project's interpreter:
 
@@ -56,7 +56,7 @@ For a walkthrough, take a snapshot, check it against the files, then read the co
 python -c "import dataclasses, json; from kedro.inspection import get_project_snapshot; s = dataclasses.asdict(get_project_snapshot('.')); key = lambda n: (n['name'], str(n['inputs']), str(n['outputs'])); named = {key(n) for p in s['pipelines'] if p['name'] != '__default__' for n in p['nodes']}; [p.update(node_count=len(p['nodes']), nodes=[n for n in p['nodes'] if key(n) not in named]) for p in s['pipelines'] if p['name'] == '__default__']; print(json.dumps({k: s[k] for k in ('metadata', 'datasets', 'parameters', 'pipelines')}, indent=1))"
 ```
 
-For `__default__`, which usually repeats the other pipelines, it prints the node count and only the nodes no other pipeline has. It puts `pipelines` last so a cut-off output still shows the configuration. If the output is too long, remove `if p['name'] == '__default__'` for node counts only, then filter `s['pipelines']` by name to print one pipeline's nodes.
+For `__default__`, which usually repeats the other pipelines, it prints the node count and only the nodes no other pipeline has. If the output is too long, remove `if p['name'] == '__default__'` for node counts only, then filter `s['pipelines']` by name to print one pipeline's nodes.
 
 Pass `env='<name>'`, `conf_source='<path>'` (Kedro 1.5.0+) or `runtime_params={...}` (Kedro 1.6.0+, only with values the user gives you) to change the environment, configuration folder or run values. Reuse it until the code, configuration, interpreter, environment or runtime parameters change. The snapshot holds:
 
@@ -78,7 +78,7 @@ It does not show what hooks change during a run or prove that the pipelines run.
 - `pyproject.toml` or `requirements.txt`: the libraries in use.
 - `tests/`, `notebooks/`, `README.md` and deployment files such as `Dockerfile` or `databricks.yml`: say what exists.
 
-**4. Read the code.** Open each node function at its `source` location, with the helpers or SQL it relies on (logic often lives outside `nodes.py`), and describe what it does to the data in domain terms. Names, docstrings and the README are hints, not evidence. Tests show intended behaviour, but do not run them (Rule 7).
+**4. Read the code.** Open each node function at its `source` location (or from the pipeline file when `source` is missing), with the helpers or SQL it relies on (logic often lives outside `nodes.py`), and describe what it does to the data in domain terms. Names, docstrings and the README are hints, not evidence. Tests show intended behaviour, but do not run them (Rule 7).
 
 ## Rules
 
@@ -88,21 +88,21 @@ It does not show what hooks change during a run or prove that the pipelines run.
 
 ### 2. A pipeline folder missing from the registry usually failed to import
 
-Projects created before Kedro 1.2.0 call `find_pipelines()` without `raise_errors=True`. When a pipeline's module fails to import, usually because a dependency is not installed, Kedro only logs a `UserWarning` ("An error occurred while importing the '<package>.pipelines.<name>' module") and leaves the pipeline out of the registry and out of `__default__`. It also skips, with a warning, a module that has no `create_pipeline()` or whose `create_pipeline()` does not return a `Pipeline`.
+Projects created before Kedro 1.2.0 call `find_pipelines()` without `raise_errors=True`. When a pipeline's module fails to import, Kedro only logs a `UserWarning` ("An error occurred while importing the '<package>.pipelines.<name>' module") and leaves the pipeline out of the registry and out of `__default__`. It also skips, with a warning, a module that has no `create_pipeline()` or whose `create_pipeline()` does not return a `Pipeline`.
 
-Compare the registry with the pipeline folders. Unless the registry code leaves a folder out or registers it under another name (Rule 1), report the cause the warning gives rather than calling it a missing pipeline, and say that the registered pipelines and `__default__` are incomplete. With `raise_errors=True`, the template default since 1.2.0, the same failure stops `kedro registry list` and the snapshot with `ImportError`.
+Compare the registry with the pipeline folders. Unless the registry code leaves a folder out or registers it under another name (Rule 1), report the cause the warning gives rather than calling it a missing pipeline, and say that the registered pipelines and `__default__` are incomplete. With `raise_errors=True`, the template default since 1.2.0, the same failure stops `kedro registry list` and the snapshot with an error instead; report it as shown.
 
 ### 3. Nodes connect by dataset name, not by their order in the file
 
 A node's input comes from whichever node outputs a dataset of the same name; `params:<key>` and `parameters` inputs come from the parameters. Nodes on independent branches have no fixed order between them, and the order of `Node(...)` calls in `pipeline.py` means nothing. For dict inputs or outputs, read the dict to match function arguments or returned keys to datasets; the snapshot's lists lose that mapping.
 
-A dataset produced by one pipeline and read by another links them. Such a pipeline runs on its own only if something provides the linking dataset: data already saved through its catalog entry or factory, or a hook. If it has no catalog entry, `kedro run --pipeline <name>` stops before any node runs with `ValueError: Pipeline input(s) {...} not found in the DataCatalog`. A `params:` input with no matching parameter fails the same way.
+A dataset produced by one pipeline and read by another links them. Such a pipeline runs on its own only if something provides the linking dataset: data already saved through its catalog entry or factory, or a hook. If nothing provides it, `kedro run --pipeline <name>` stops before any node runs with `ValueError: Pipeline input(s) {...} not found in the DataCatalog`. A `params:` input with no matching parameter fails the same way.
 
 ### 4. A dataset with no catalog entry is in memory and is not saved
 
 Only names in the catalog, directly or through a factory pattern, are loaded from or saved to storage, unless their type is `MemoryDataset`; patterns match by specificity, not by their order in the file. Every other name is a `MemoryDataset` that is never saved: `kedro run` discards it, and `session.run()` returns only the final outputs to a Python caller. Keeping intermediates in memory is normal, but a final output or model that no catalog entry, factory or hook saves is worth flagging, as a question rather than a defect. To keep a dict such as `metrics`, a `json.JSONDataset` entry works; `tracking.MetricsDataset` and `tracking.JSONDataset` were removed in kedro-datasets 7.0.0, so never suggest them, and flag existing entries that use them: from 7.0.0, a pipeline that uses one fails with `DatasetError` before any node runs.
 
-The snapshot leaves in-memory names out of `datasets`. `kedro catalog describe-datasets` lists them under `defaults`, but it creates a session and runs hooks (step 1). Names that differ only after an `@` (`companies@pandas`) are one dataset loaded and saved through different types (transcoding). A catalog entry describes intended storage, not proof that the data exists.
+The snapshot leaves names with no catalog entry or matching factory out of `datasets`; an explicit `MemoryDataset` entry still appears. `kedro catalog describe-datasets` lists them under `defaults`, but it creates a session and runs hooks (step 1). Names that differ only after an `@` (`companies@pandas`) are one dataset loaded and saved through different types (transcoding). A catalog entry describes intended storage, not proof that the data exists.
 
 ### 5. Namespaces rename nodes, datasets and parameters
 
@@ -110,7 +110,7 @@ The snapshot leaves in-memory names out of `datasets`. `kedro catalog describe-d
 
 ### 6. Never expose secrets
 
-Do not read or quote `conf/local/credentials.yml`, any other credentials file, `.env` files or environment variable values, and never repeat a credential value, even a fake one or one quoted in a README, or a URL or connection string that contains a password or key. Refer to credentials by the key a catalog entry names (`credentials: dev_s3`) or by the environment variable's name. The template commits only `conf/local/.gitkeep`, so a fresh clone has an empty `conf/local/` and no credentials: report them as setup still to do, not as a defect. `${oc.env:VAR}` works in credentials files by default; other files need it registered as a custom resolver.
+Do not read or quote `conf/local/credentials.yml`, any other credentials file, `.env` files or environment variable values, and never repeat a credential value, even a fake one or one quoted in a README, or a URL or connection string that contains a password or key. Refer to credentials by the key a catalog entry names (`credentials: dev_s3`) or by the environment variable's name. A fresh clone has an empty `conf/local/` and no credentials: report them as setup still to do, not as a defect. `${oc.env:VAR}` works in credentials files by default; other files need it registered as a custom resolver.
 
 ### 7. Do not run the pipeline or start a server to explain it
 
@@ -149,10 +149,10 @@ For a walkthrough, lead with what the project does and its main path from inputs
 5. **Parameters and configuration**: parameter groups and the nodes that read them, the environments and which one you explained, and settings that differ from the template. Apply the merge rules under Find the project, and treat run-time values the user has not given as unknowns.
 6. **Where the logic lives**: node functions as `file:line`, plus code outside nodes that changes results, such as helpers, SQL, hooks and custom datasets.
 7. **Kedro features in use**: only those present, with where and how this project uses them, without teaching how to write them.
-8. **Worth investigating**: concrete findings, each with its evidence and the next thing to check. For example: a final output or model that nothing saves, catalog entries no registered pipeline uses, pipeline folders that fail to import, parameters no node reads, nodes without `name=` (their generated names change when their inputs or outputs do) and leftovers from removed features. No generic advice such as "add more tests"; configuration or access you cannot resolve is a limit of the explanation, not a defect.
+8. **Worth investigating**: concrete findings, each with its evidence and the next thing to check. For example: a final output or model that nothing saves, catalog entries no registered pipeline uses, pipeline folders that fail to import, parameters no node reads, nodes without `name=` and leftovers from removed features. No generic advice such as "add more tests"; configuration or access you cannot resolve is a limit of the explanation, not a defect.
 9. **See it in Kedro-Viz**: the command, and what to look at first.
 
-Back each statement about code or configuration with a file reference (`path:line` when you have one), and keep what the code shows apart from what you infer. Before saying a file or folder is missing or empty, list it with `ls -a <path>`: globs, `ls` of a parent folder and `git ls-files` miss `.gitkeep` files and git-ignored data. Use Kedro's names for pipelines, nodes and datasets; for a node without `name=`, use its function name, as Kedro-Viz does. Quote only the parts of the snapshot and catalog the answer needs, and skip standard template files (`__main__.py`, `settings.py` comments, `conf/logging.yml`, empty parameter files) unless they differ from the template.
+Back each statement about code or configuration with a file reference (`path:line` when you have one), and keep what the code shows apart from what you infer. Before saying a file or folder is missing or empty, list it with `ls -a <path>`: globs, `ls` of a parent folder and `git ls-files` miss `.gitkeep` files and git-ignored data. For a node without `name=`, use its function name, as Kedro-Viz does. Quote only the parts of the snapshot and catalog the answer needs, and skip standard template files (`__main__.py`, `settings.py` comments, `conf/logging.yml`, empty parameter files) unless they differ from the template.
 
 **Before answering, check** every arrow against node inputs and outputs, every storage claim against catalog entries, factories, hooks and dataset types, every node output against the dataset that saves it, and every parameter value against the merge rules. Then say what the explanation is based on (files, a snapshot, or a Kedro-Viz graph you actually saw) and what you could not verify; claim test runs, data access or pipeline runs only if they happened.
 
