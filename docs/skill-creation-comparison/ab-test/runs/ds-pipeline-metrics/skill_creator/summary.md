@@ -1,0 +1,1 @@
+Appended test_data_science_pipeline_produces_metrics to existing test_pipeline.py; 10-row table; SequentialRunner + DataCatalog (MemoryDataset, params:model_options via existing dummy_parameters); result['metrics'].load(); set equality. Final: 4 passed, 1 warning in 0.71s. Mistakes: none.

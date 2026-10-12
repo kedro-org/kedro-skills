@@ -1,0 +1,1 @@
+DataCatalog (MemoryDataset model_input_table w/ extra cols + params:model_options); SequentialRunner on create_pipeline().to_outputs('X_train') because intermediates are released; result['X_train'].load(); asserts columns == features, price/company_rating absent. Final: 4 passed, 1 warning in 0.70s. Mistakes: none.

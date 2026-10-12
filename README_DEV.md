@@ -41,7 +41,13 @@ src/kedro_skills/
 skills/
 ├── catalog-config/
 │   └── SKILL.md        # Canonical skill content (Agent Skills standard)
-└── llm-context-nodes/
+├── llm-context-nodes/
+│   └── SKILL.md
+├── parameters-and-config/
+│   └── SKILL.md
+├── testing-pipelines-raw/
+│   └── SKILL.md
+└── testing-pipelines-skill-creator/
     └── SKILL.md
 
 registry.yaml           # Skill metadata: id, category, paths, ide_support

@@ -1,0 +1,1 @@
+New file test_pipeline_metrics.py with own fixtures; DataCatalog of MemoryDataset with params:model_options; SequentialRunner full pipeline; result['metrics'].load(); set equality on keys. Final: 4 passed, 1 warning in 0.82s. Mistakes: none.

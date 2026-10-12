@@ -1,0 +1,55 @@
+{
+  "expectations": [
+    {
+      "text": "Tests pass under pytest",
+      "passed": true,
+      "evidence": "2 passed, 3 warnings in 3.90s"
+    },
+    {
+      "text": "Removes load_context / context.run",
+      "passed": true,
+      "evidence": "tests/test_legacy.py"
+    },
+    {
+      "text": "Smoke part uses bootstrap_project + KedroSession",
+      "passed": true,
+      "evidence": "tests/test_legacy.py"
+    },
+    {
+      "text": "Reads metrics with .load()",
+      "passed": true,
+      "evidence": "tests/test_legacy.py"
+    },
+    {
+      "text": "Registers 'params:model_options'",
+      "passed": true,
+      "evidence": "tests/test_legacy.py"
+    },
+    {
+      "text": "Keeps both original checks (2 test functions)",
+      "passed": true,
+      "evidence": "tests/test_legacy.py"
+    },
+    {
+      "text": "Keeps the mae < 1 assertion",
+      "passed": true,
+      "evidence": "tests/test_legacy.py"
+    },
+    {
+      "text": "Uses pipeline_names= (not the deprecated pipeline_name=)",
+      "passed": true,
+      "evidence": "tests/test_legacy.py"
+    },
+    {
+      "text": "Project path does not depend on cwd (no Path.cwd())",
+      "passed": true,
+      "evidence": "tests/test_legacy.py"
+    }
+  ],
+  "summary": {
+    "passed": 9,
+    "failed": 0,
+    "total": 9,
+    "pass_rate": 1.0
+  }
+}
