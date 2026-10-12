@@ -1,0 +1,35 @@
+{
+  "expectations": [
+    {
+      "text": "Tests pass under pytest",
+      "passed": true,
+      "evidence": "1 passed, 5 warnings in 3.95s"
+    },
+    {
+      "text": "Calls bootstrap_project before KedroSession.create",
+      "passed": true,
+      "evidence": "tests/test_smoke.py"
+    },
+    {
+      "text": "Passes runtime_params as a nested dict (no dotted key)",
+      "passed": true,
+      "evidence": "tests/test_smoke.py"
+    },
+    {
+      "text": "Uses pipeline_names= (not the deprecated pipeline_name=)",
+      "passed": true,
+      "evidence": "tests/test_smoke.py"
+    },
+    {
+      "text": "Asserts that 0.3 took effect",
+      "passed": true,
+      "evidence": "tests/test_smoke.py"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  }
+}

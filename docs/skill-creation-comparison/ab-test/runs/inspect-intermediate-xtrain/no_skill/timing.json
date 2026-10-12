@@ -1,0 +1,1 @@
+{"total_tokens": 37588, "duration_ms": 74283, "total_duration_seconds": 74.3, "tool_uses": 8, "failed_attempts": 0, "note": "first file write blocked by a safety classifier (tool issue, not a Kedro mistake)"}

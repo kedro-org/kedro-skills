@@ -1,0 +1,25 @@
+{
+  "expectations": [
+    {
+      "text": "Tests pass under pytest",
+      "passed": true,
+      "evidence": "9 passed in 0.24s"
+    },
+    {
+      "text": "Calls both node functions directly",
+      "passed": true,
+      "evidence": "tests/pipelines/data_processing/test_nodes.py"
+    },
+    {
+      "text": "No Kedro machinery (no KedroSession/SequentialRunner/DataCatalog)",
+      "passed": true,
+      "evidence": "tests/pipelines/data_processing/test_nodes.py"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3,
+    "pass_rate": 1.0
+  }
+}

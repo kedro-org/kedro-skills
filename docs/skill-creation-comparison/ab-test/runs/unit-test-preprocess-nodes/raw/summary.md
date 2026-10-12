@@ -1,0 +1,1 @@
+6 unit tests (3 per node) calling preprocess_companies/preprocess_shuttles directly with fresh fixtures (nodes mutate input). Created then removed __init__.py. Final: 10 passed, 5 warnings in 4.48s (whole tests dir). Mistakes: none affecting result.

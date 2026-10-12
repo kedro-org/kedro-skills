@@ -1,0 +1,2 @@
+test_runtime_override_of_test_size: KedroSession runtime_params nested (after failure); asserts params test_size 0.3 & random_state kept; run pipeline_names=[dp, ds]; spy on train_test_split asserts test_size=0.3 and ceil(0.3n) rows. Final: 1 passed, 5 warnings in 3.98s.
+Mistakes: (1) muddled first draft rewritten before running; (2) first run used dotted key "model_options.test_size" -> assert 0.2 == 0.3 (dotted keys not expanded); switched to nested. Report was truncated by an API error after work finished.

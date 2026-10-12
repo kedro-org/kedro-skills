@@ -1,0 +1,1 @@
+Appended test_data_science_pipeline_metrics to existing test_pipeline.py; 10-row table; DataCatalog + SequentialRunner full pipeline; metrics loaded from catalog; asserts keys. Final: 4 passed, 1 warning in 0.74s. Mistakes: none.

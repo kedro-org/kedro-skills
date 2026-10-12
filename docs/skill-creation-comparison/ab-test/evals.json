@@ -1,0 +1,40 @@
+{
+  "skill_name": "testing-pipelines-skill-creator",
+  "evals": [
+    {
+      "id": 1,
+      "name": "ds-pipeline-metrics",
+      "prompt": "Add a test in tests/pipelines/data_science/ that runs the whole data_science pipeline on a small made-up dataset and checks that the metrics dict it produces has the r2_score, mae and max_error keys.",
+      "expected_output": "In-memory DataCatalog + SequentialRunner test; params:model_options registered; metrics read with .load() or catalog.load; passes under pytest.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "inspect-intermediate-xtrain",
+      "prompt": "I want a test that runs the data_science pipeline in memory and then checks that X_train (the output of split_data_node) only contains the feature columns listed in model_options. Put it in tests/pipelines/data_science/test_split_output.py.",
+      "expected_output": "Recognises X_train is released after the run; slices with to_outputs/only_nodes or otherwise makes X_train a pipeline output; loads it; passes under pytest.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "smoke-runtime-params",
+      "prompt": "Write a smoke test in tests/test_smoke.py that runs the data_processing and data_science pipelines through a Kedro session, overriding model_options.test_size to 0.3 for the run, and asserts that the override actually took effect.",
+      "expected_output": "bootstrap_project before KedroSession.create; runtime_params nested ({'model_options': {'test_size': 0.3}}); pipeline_names; asserts override via context params or equivalent; passes under pytest.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "unit-test-preprocess-nodes",
+      "prompt": "Write unit tests for preprocess_companies and preprocess_shuttles in the data_processing pipeline. Put them in tests/pipelines/data_processing/test_nodes.py.",
+      "expected_output": "Calls node functions directly with small DataFrames; no session/catalog/runner; passes under pytest.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "fix-legacy-test",
+      "prompt": "tests/test_legacy.py was written by a colleague a while ago and doesn't work anymore with our Kedro version. Fix it so it passes, keeping what it is trying to check.",
+      "expected_output": "Replaces load_context/context.run with bootstrap_project + KedroSession or an in-memory runner test; metrics read with .load(); passes under pytest.",
+      "files": ["tests/test_legacy.py"]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Tests pass under pytest",
+      "passed": true,
+      "evidence": "4 passed, 1 warning in 0.70s"
+    },
+    {
+      "text": "Runs the pipeline in memory (SequentialRunner, no KedroSession)",
+      "passed": true,
+      "evidence": "tests/pipelines/data_science/test_pipeline.py"
+    },
+    {
+      "text": "Registers the parameters under the literal 'params:model_options' key",
+      "passed": true,
+      "evidence": "tests/pipelines/data_science/test_pipeline.py"
+    },
+    {
+      "text": "Reads metrics through .load() or catalog.load, not by indexing the run result",
+      "passed": true,
+      "evidence": "tests/pipelines/data_science/test_pipeline.py"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}

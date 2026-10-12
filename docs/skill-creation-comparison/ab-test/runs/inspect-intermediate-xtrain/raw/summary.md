@@ -1,0 +1,1 @@
+test_x_train_only_has_model_option_features: own fixtures (table with unused_column + price), DataCatalog of MemoryDataset incl. params:model_options, SequentialRunner on create_pipeline().to_outputs("X_train") because intermediates are released; result["X_train"].load(); asserts columns == features, no unused_column, no price. Final: 1 passed in 0.86s. Mistakes: none.

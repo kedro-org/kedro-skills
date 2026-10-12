@@ -46,3 +46,40 @@ skills:
       - copilot
       - claude
       - codex
+
+  # testing-pipelines ships in two variants written two different ways (by hand
+  # and with the skill-creator skill) so they can be compared side by side. See
+  # docs/skill-creation-comparison/.
+  - id: testing-pipelines-raw
+    category: testing
+    description: >-
+      Kedro testing guidance for tests/**/*.py in a Kedro project. Use when writing
+      unit tests for node functions, pipeline tests with DataCatalog, MemoryDataset
+      and SequentialRunner, or KedroSession smoke tests. Adds nothing for tests
+      that do not touch Kedro.
+    paths:
+      - "tests/**/*.py"
+    ide_support:
+      - cursor
+      - copilot
+      - claude
+      - codex
+
+  - id: testing-pipelines-skill-creator
+    category: testing
+    description: >-
+      How to write tests for a Kedro 1.x project in tests/**/*.py, covering unit tests for
+      node functions, in-memory pipeline tests with DataCatalog, MemoryDataset and
+      SequentialRunner, and KedroSession smoke tests. Use this whenever you write,
+      fix or review a test that imports kedro or a Kedro project's nodes and
+      pipelines, even when the request is just "add tests for this pipeline" or
+      "why does my pipeline test fail". Kedro 1.x changed what runners return and
+      how sessions start, and older examples get both wrong. Not needed for tests
+      that never touch Kedro.
+    paths:
+      - "tests/**/*.py"
+    ide_support:
+      - cursor
+      - copilot
+      - claude
+      - codex

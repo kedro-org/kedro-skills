@@ -1,0 +1,1 @@
+Fixed test_legacy.py: bootstrap_project + KedroSession.create + pipeline_names (PROJECT_PATH from __file__); params:model_options key; result['metrics'].load()['mae'] < 1. Final: 2 passed, 3 warnings in 4.38s. Mistakes: none (fixed from skill guidance without running original first).

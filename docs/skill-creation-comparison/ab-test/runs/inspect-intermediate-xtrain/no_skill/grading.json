@@ -1,0 +1,30 @@
+{
+  "expectations": [
+    {
+      "text": "Tests pass under pytest",
+      "passed": true,
+      "evidence": "1 passed, 1 warning in 0.66s"
+    },
+    {
+      "text": "Makes X_train observable (slice so it is an output, or a hook), not catalog.load after a full run",
+      "passed": true,
+      "evidence": "hook"
+    },
+    {
+      "text": "Compares X_train columns with model_options features",
+      "passed": true,
+      "evidence": "tests/pipelines/data_science/test_split_output.py"
+    },
+    {
+      "text": "Runs in memory (no KedroSession)",
+      "passed": true,
+      "evidence": "tests/pipelines/data_science/test_split_output.py"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  }
+}
