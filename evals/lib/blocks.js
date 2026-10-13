@@ -81,6 +81,16 @@ function forbid(output, pattern, where, what) {
   return { pass: false, score: 0, reason: `Found ${what} in ${paths}` };
 }
 
+// Passes if any block selected by `where` matches `pattern`. Counter-example
+// blocks do not count.
+function requireCode(output, pattern, where, what) {
+  const hit = codeBlocks(output).find((b) => !b.antiExample && where(b) && pattern.test(b.code));
+  if (hit) {
+    return { pass: true, score: 1, reason: `Found ${what} in ${hit.path || '<unlabelled block>'}` };
+  }
+  return { pass: false, score: 0, reason: `No ${what}` };
+}
+
 const isPython = (b) => b.lang === 'python' || b.lang === 'py' || /\.py$/.test(b.path || '');
 
-module.exports = { codeBlocks, forbid, isPython };
+module.exports = { codeBlocks, forbid, requireCode, isPython };

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+description: testing-pipelines, raw vs skill-creator
+
+# Both skill variants (current and iteration 1) and the baseline in one eval, as prompt columns on
+# the same tests, so the results can be read side by side. Run it with
+#   make eval-config CONFIG=evals/skills/testing-pipelines-shared/compare.yaml
+# The per-variant suites in ../testing-pipelines-raw/ and
+# ../testing-pipelines-skill-creator/ run the same tests one variant at a time.
+prompts:
+  - id: file://prompts.js:raw
+    label: with-skill:raw
+  - id: file://prompts.js:skillCreator
+    label: with-skill:skill-creator
+  # Iteration 1 versions, for before/after. Not labelled with-skill, so
+  # gate.js reports their failures without failing the run.
+  - id: file://prompts.js:rawV1
+    label: v1:raw
+  - id: file://prompts.js:skillCreatorV1
+    label: v1:skill-creator
+  - id: file://../../prompts/baseline.json
+    label: baseline
+
+providers:
+  - id: openai:chat:gpt-4o
+    config: { temperature: 0, max_tokens: 4096 }
+  # Cheaper alternative (key: MOONSHOT_API_KEY). Reasoning model: 4096 tokens
+  # truncated answers in the parameters-and-config suite, and showThinking must
+  # be false or the reasoning is prefixed to the output that gets graded.
+  - id: moonshot:kimi-k2.7-code
+    config: { max_tokens: 16000, showThinking: false }
+  # Disabled until an Anthropic API key is available.
+  # - id: anthropic:messages:claude-sonnet-5-5
+  #   config: { temperature: 0, max_tokens: 4096 }
+  # - id: anthropic:messages:claude-haiku-4-5-20251001
+  #   config: { temperature: 0, max_tokens: 4096 }
+
+defaultTest:
+  options:
+    # Judge for llm-rubric assertions. A different model family from most of
+    # the providers under test, to limit self-preference bias.
+    provider: openai:chat:gpt-4o-mini
+  vars:
+    skill_raw: file://../../../skills/testing-pipelines-raw/SKILL.md
+    skill_creator: file://../../../skills/testing-pipelines-skill-creator/SKILL.md
+    skill_raw_v1: file://../../../docs/skill-creation-comparison/v1/testing-pipelines-raw.md
+    skill_creator_v1: file://../../../docs/skill-creation-comparison/v1/testing-pipelines-skill-creator.md
+    project_context: file://../../fixture/context.py
+
+tests: file://tests.yaml

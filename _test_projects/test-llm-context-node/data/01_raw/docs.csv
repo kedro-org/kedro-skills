@@ -1,0 +1,4 @@
+title,text
+kedro,"Kedro is an open-source Python framework for creating reproducible, maintainable and modular data science code."
+pipeline,"A Kedro pipeline is a collection of nodes that declare data dependencies. Kedro resolves the execution order from those dependencies."
+catalog,"The Kedro Data Catalog maps dataset names to storage backends so nodes can load and save data without hard-coded file paths."

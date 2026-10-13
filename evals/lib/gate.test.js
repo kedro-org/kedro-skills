@@ -29,3 +29,13 @@ test('baseline errors and passes are reported separately', () => {
   assert.equal(baselineErrors.length, 1);
   assert.equal(baselinePassed.length, 1);
 });
+
+test('with-skill:<variant> labels are gated too', () => {
+  const { gated, failed } = gate([
+    result('with-skill:raw', false),
+    result('with-skill:skill-creator', true),
+    result('baseline', false),
+  ]);
+  assert.equal(gated.length, 2);
+  assert.equal(failed.length, 1);
+});

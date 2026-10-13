@@ -1,0 +1,75 @@
+{
+  "kedro_skills_version": "0.2.0",
+  "skills": {
+    "catalog-config": {
+      "files": [
+        {
+          "block_id": null,
+          "kind": "managed_copy",
+          "path": ".agents/skills/catalog-config/SKILL.md",
+          "sha256": "703bcbcad665057a992ef56f8796ec89607f4fc934fbefe62fd9747243690efa"
+        },
+        {
+          "block_id": "kedro-skills:catalog-config",
+          "kind": "agents_md_block",
+          "path": "AGENTS.md",
+          "sha256": "b8f337c38e9524fc72a1ab0417cac0d75761db92b5b8661452474b4347beaa3d"
+        },
+        {
+          "block_id": null,
+          "kind": "activation_wrapper",
+          "path": ".cursor/rules/catalog-config.mdc",
+          "sha256": "91f325a654fadaeff9774df7e9f68f4457eb28b52dbc47f92f082d6bf302dede"
+        },
+        {
+          "block_id": null,
+          "kind": "activation_wrapper",
+          "path": ".github/instructions/catalog-config.instructions.md",
+          "sha256": "bcfb1b8169f31d305a086a1421aeea6665cd03bf0e75fb159fe5434d22bc7770"
+        },
+        {
+          "block_id": null,
+          "kind": "managed_copy",
+          "path": ".claude/skills/catalog-config/SKILL.md",
+          "sha256": "703bcbcad665057a992ef56f8796ec89607f4fc934fbefe62fd9747243690efa"
+        }
+      ],
+      "version": "0.2.0"
+    },
+    "llm-context-nodes": {
+      "files": [
+        {
+          "block_id": null,
+          "kind": "managed_copy",
+          "path": ".agents/skills/llm-context-nodes/SKILL.md",
+          "sha256": "7dc28e7cf1137440fc2b0004ee15b3bdd60b32d044ce5f5e420f9d955015cc9a"
+        },
+        {
+          "block_id": "kedro-skills:llm-context-nodes",
+          "kind": "agents_md_block",
+          "path": "AGENTS.md",
+          "sha256": "553d846444adfdfc5b42ae86a684e3621a62a16ea8c7bf37693eaf119e49b554"
+        },
+        {
+          "block_id": null,
+          "kind": "activation_wrapper",
+          "path": ".cursor/rules/llm-context-nodes.mdc",
+          "sha256": "ebc48ffdacabc86531986a441d047359eadbd3c0347e89efd9887df0f5a2c73e"
+        },
+        {
+          "block_id": null,
+          "kind": "activation_wrapper",
+          "path": ".github/instructions/llm-context-nodes.instructions.md",
+          "sha256": "57e10ebb4d62211694a371b81e589d6aa8bc5d886283dea61562d4070446cef0"
+        },
+        {
+          "block_id": null,
+          "kind": "managed_copy",
+          "path": ".claude/skills/llm-context-nodes/SKILL.md",
+          "sha256": "7dc28e7cf1137440fc2b0004ee15b3bdd60b32d044ce5f5e420f9d955015cc9a"
+        }
+      ],
+      "version": "0.2.0"
+    }
+  }
+}

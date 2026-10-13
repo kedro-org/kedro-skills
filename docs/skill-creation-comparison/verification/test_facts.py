@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from kedro.config import MissingConfigException
 from kedro.framework.context import KedroContext
 from kedro.framework.session import KedroSession
 from kedro.framework.startup import bootstrap_project
@@ -187,9 +188,18 @@ def test_f10_session_env_and_runtime_params(tmp_path):
         params = session.load_context().params
         assert params["model_options"]["test_size"] == 0.2
         assert "model_options.test_size" in params
-    # a non-existent env is silently accepted
+    # a non-existent env is accepted by create() and load_context(), but it does
+    # NOT fall back to base: parameters come back empty (with a UserWarning) and
+    # the catalog, and so session.run(), raise MissingConfigException.
+    # (The first version of this test stopped at load_context() and so "proved"
+    # a silent fallback to base that does not happen.)
     with KedroSession.create(project_path=PROJECT, env="does_not_exist") as s:
-        s.load_context()
+        with pytest.warns(UserWarning, match="Parameters not found"):
+            ctx = s.load_context()
+            assert ctx.params == {}
+    with KedroSession.create(project_path=PROJECT, env="does_not_exist") as s:
+        with pytest.raises(MissingConfigException, match="does not exist"):
+            s.run(pipeline_names=["data_processing"])
 
 
 def test_f10c_env_params_replace_top_level_key(tmp_path):

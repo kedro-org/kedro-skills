@@ -1,4 +1,4 @@
-.PHONY: install lint type-check test build clean eval eval-skill eval-test eval-check-node
+.PHONY: install lint type-check test build clean eval eval-skill eval-config eval-test eval-check-node
 
 install:
 	pip install -e ".[dev]"
@@ -43,7 +43,7 @@ eval-check-node:
 	@node -e 'const [a,b]=process.versions.node.split(".").map(Number); if (a<22||(a===22&&b<22)) { console.error("Skill evals need Node >= 22.22, found " + process.versions.node); process.exit(1) }'
 
 eval-test: eval-check-node
-	node --test evals/lib/*.test.js
+	node --test evals/lib/*.test.js evals/skills/*/*.test.js
 
 eval: eval-check-node eval-test
 	@mkdir -p $(EVAL_RESULTS); status=0; for config in evals/skills/*/promptfooconfig.yaml; do \
@@ -57,3 +57,13 @@ eval-skill: eval-check-node
 	@mkdir -p $(EVAL_RESULTS); rm -f $(EVAL_RESULTS)/$(SKILL).json
 	$(EVAL_RUN) -c evals/skills/$(SKILL)/promptfooconfig.yaml -o $(EVAL_RESULTS)/$(SKILL).json
 	@node evals/lib/gate.js $(EVAL_RESULTS)/$(SKILL).json
+
+# Runs one config that is not a skill's promptfooconfig.yaml, e.g. a suite
+# comparing skill variants:
+#   make eval-config CONFIG=evals/skills/testing-pipelines-shared/compare.yaml
+EVAL_CONFIG_OUT = $(EVAL_RESULTS)/$(notdir $(patsubst %/,%,$(dir $(CONFIG))))-$(notdir $(basename $(CONFIG))).json
+eval-config: eval-check-node
+	@test -n "$(CONFIG)" || (echo "Usage: make eval-config CONFIG=<path to promptfoo config>"; exit 1)
+	@mkdir -p $(EVAL_RESULTS); rm -f $(EVAL_CONFIG_OUT)
+	$(EVAL_RUN) -c $(CONFIG) -o $(EVAL_CONFIG_OUT)
+	@node evals/lib/gate.js $(EVAL_CONFIG_OUT)

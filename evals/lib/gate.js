@@ -8,15 +8,17 @@
 const fs = require('node:fs');
 
 const GATED = 'with-skill';
+// A suite that compares skill variants labels its prompts with-skill:<variant>.
+const isGated = (r) => r.prompt.label === GATED || r.prompt.label.startsWith(`${GATED}:`);
 const ERROR = 2; // promptfoo ResultFailureReason.ERROR
 
 function gate(results) {
-  const gated = results.filter((r) => r.prompt.label === GATED);
+  const gated = results.filter(isGated);
   const failed = gated.filter((r) => !r.success);
   const baselineErrors = results.filter(
-    (r) => r.prompt.label !== GATED && r.failureReason === ERROR,
+    (r) => !isGated(r) && r.failureReason === ERROR,
   );
-  const baselinePassed = results.filter((r) => r.prompt.label !== GATED && r.success);
+  const baselinePassed = results.filter((r) => !isGated(r) && r.success);
   return { gated, failed, baselineErrors, baselinePassed };
 }
 

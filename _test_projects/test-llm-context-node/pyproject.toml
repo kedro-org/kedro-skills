@@ -1,0 +1,45 @@
+[build-system]
+requires = [
+    "setuptools",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+requires-python = ">=3.10"
+name = "test_llm_context_node"
+readme = "README.md"
+dynamic = [
+    "version",
+]
+dependencies = [
+    "ipython>=8.10",
+    "jupyterlab>=3.0",
+    "notebook",
+    "kedro~=1.6.0",
+    "kedro-datasets[langchain-chatopenaidataset,langchain-promptdataset,pandas-csvdataset,text-textdataset]",
+]
+
+[project.scripts]
+test-llm-context-node = "test_llm_context_node.__main__:main"
+
+[project.entry-points."kedro.hooks"]
+
+[tool.setuptools.dynamic.version]
+attr = "test_llm_context_node.__version__"
+
+[tool.setuptools.packages.find]
+where = [
+    "src",
+]
+namespaces = false
+
+[tool.kedro]
+package_name = "test_llm_context_node"
+project_name = "Test LLM Context Node"
+kedro_init_version = "1.6.0"
+tools = "['None']"
+example_pipeline = "False"
+source_dir = "src"
+
+[tool.kedro_telemetry]
+project_id = "608c0eb77eb24450a94cae80c446c522"

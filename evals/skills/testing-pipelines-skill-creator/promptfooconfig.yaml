@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+description: testing-pipelines-skill-creator skill
+
+# The two testing-pipelines variants (raw and skill-creator) share their tests
+# and assertions in ../testing-pipelines-shared/, so they are graded on the
+# same tasks. Only skill_content differs. Both suites run the baseline, but
+# promptfoo caches it, so the second suite repeats the first one's baseline
+# answers. To see both variants and one baseline side by side, run
+# ../testing-pipelines-shared/compare.yaml instead.
+prompts:
+  - id: file://../../prompts/with-skill.json
+    label: with-skill
+  - id: file://../../prompts/baseline.json
+    label: baseline
+
+providers:
+  - id: openai:chat:gpt-4o
+    config: { temperature: 0, max_tokens: 4096 }
+  # Cheaper alternative (key: MOONSHOT_API_KEY). Reasoning model: 4096 tokens
+  # truncated answers in the parameters-and-config suite, and showThinking must
+  # be false or the reasoning is prefixed to the output that gets graded.
+  - id: moonshot:kimi-k2.7-code
+    config: { max_tokens: 16000, showThinking: false }
+  # Disabled until an Anthropic API key is available.
+  # - id: anthropic:messages:claude-sonnet-5-5
+  #   config: { temperature: 0, max_tokens: 4096 }
+  # - id: anthropic:messages:claude-haiku-4-5-20251001
+  #   config: { temperature: 0, max_tokens: 4096 }
+
+defaultTest:
+  options:
+    # Judge for llm-rubric assertions. A different model family from most of
+    # the providers under test, to limit self-preference bias.
+    provider: openai:chat:gpt-4o-mini
+  vars:
+    skill_content: file://../../../skills/testing-pipelines-skill-creator/SKILL.md
+    project_context: file://../../fixture/context.py
+
+tests: file://../testing-pipelines-shared/tests.yaml

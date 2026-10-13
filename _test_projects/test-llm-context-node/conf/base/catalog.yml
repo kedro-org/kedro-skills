@@ -1,0 +1,34 @@
+llm:
+  type: langchain.ChatOpenAIDataset
+  kwargs:
+    model: gpt-4o-mini
+    temperature: 0.0
+  credentials: openai
+
+qa_prompt:
+  type: kedro_datasets_experimental.langchain.PromptDataset
+  filepath: data/01_raw/prompts/qa.txt
+  template: PromptTemplate
+  dataset:
+    type: text.TextDataset
+  metadata:
+    kedro-viz:
+      layer: raw
+
+docs:
+  type: pandas.CSVDataset
+  filepath: data/01_raw/docs.csv
+  metadata:
+    kedro-viz:
+      layer: raw
+
+qa_context:
+  type: MemoryDataset
+  copy_mode: assign
+
+reply:
+  type: text.TextDataset
+  filepath: data/08_reporting/reply.txt
+  metadata:
+    kedro-viz:
+      layer: reporting

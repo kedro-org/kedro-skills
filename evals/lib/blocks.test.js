@@ -1,7 +1,7 @@
 // Run with: node --test evals/lib/*.test.js
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { codeBlocks, forbid } = require('./blocks.js');
+const { codeBlocks, forbid, requireCode } = require('./blocks.js');
 
 const paths = (output) => codeBlocks(output).map((b) => b.path);
 
@@ -83,4 +83,11 @@ test('forbid reports the offending path', () => {
   const result = forbid(out, /oc\.env/, (b) => /parameters/.test(b.path || ''), 'oc.env');
   assert.equal(result.pass, false);
   assert.match(result.reason, /conf\/base\/parameters\.yml/);
+});
+
+test('requireCode passes on a matching block and ignores counter-examples', () => {
+  const good = '```python\nresult["metrics"].load()\n```';
+  assert.equal(requireCode(good, /\.load\(/, () => true, 'x').pass, true);
+  const anti = 'Do not write:\n```python\nresult["metrics"].load()\n```';
+  assert.equal(requireCode(anti, /\.load\(/, () => true, 'x').pass, false);
 });

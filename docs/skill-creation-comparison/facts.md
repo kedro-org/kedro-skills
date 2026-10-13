@@ -26,7 +26,7 @@ an in-memory catalog. Most facts below therefore come from source.
 | 9 | Slicing: `only_nodes`, `from_nodes`, `to_nodes`, `from_inputs`, `to_outputs`, `only_nodes_with_tags`, `filter`. The slice's own `.inputs()` is what the test catalog must provide | ✅ True | `test_f09` |
 | 10 | `KedroSession.create(project_path, env=..., runtime_params=...)` exist as kwargs | ✅ True, with three caveats ↓ | `test_f10`; `session.py:129-136` |
 | 10a | `runtime_params` through the Python API must be **nested** (`{"model_options": {"test_size": 0.5}}`). Dotted keys (`"model_options.test_size"`) are **not** expanded. They end up as a literal top-level key and the real value is unchanged. Only the CLI `--params` parses dots | ⚠️ New finding | `test_f10` |
-| 10b | A non-existent `env` is accepted silently, with no error | ⚠️ New finding | `test_f10` |
+| 10b | A non-existent `env` is accepted by `KedroSession.create()` and `load_context()`, but it does **not** fall back to base: parameters come back empty `{}` with only a `UserWarning` ("Parameters not found"), and the catalog, so `session.run()`, raises `MissingConfigException: ... conf/<env> does not exist` | ❌ First draft was wrong ("accepted silently, uses base"); corrected 2026-10-13 | `test_f10`. The first evidence stopped at `load_context()` not raising. Caught while verifying the iteration-2 skill fixes |
 | 10c | A `parameters.yml` in a test env **replaces** the whole top-level key from `base`. `conf/test/parameters.yml` with only `model_options.test_size` drops `features` and `random_state` | ⚠️ New finding | `test_f10c` |
 | 10d | A session runs once: a second `session.run()` raises `KedroSessionError: A run has already been completed`. `session.run()` also returns `{name: dataset}` | ✅ True | `test_f10b`; `session.py:337-342` |
 | 10e | `session.run(pipeline_name=...)` is deprecated. Use `pipeline_names=[...]` | ✅ True | `session.py:330-335` |
@@ -47,10 +47,18 @@ an in-memory catalog. Most facts below therefore come from source.
 | Running a whole session to test one node | Confirmed as bad practice (5, 10f) |
 
 Not in the roadmap, found during verification: 6 (runner returns datasets), 6b
-(intermediates are released), 10a–c (runtime params, silent env, env merge), 10f
+(intermediates are released), 10a–c (runtime params, missing env, env merge), 10f
 (smoke tests write real files).
 
 **Process note:** 6b was first written as "intermediates stay loadable". The
 evidence test only checked `"X_train" in catalog`, which is true but not enough.
 Running the raw skill's snippet showed the claim was wrong. A fact is only
 verified once a test exercises the behaviour the skill tells people to rely on.
+
+**Process note 2 (2026-10-13):** 10b repeated the same mistake. Its evidence test
+only checked that `load_context()` does not raise, and the fact sheet turned that into
+"silently uses base config". Both skills shipped the claim, and the round 2 promptfoo
+rubric for the misspelled-env test was written from it. Running a test that reads
+`context.params` and calls `session.run()` with a bad env showed empty parameters and
+a `MissingConfigException`. Same lesson as 6b: test the behaviour the skill describes,
+not just that nothing raised.

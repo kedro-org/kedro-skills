@@ -39,8 +39,9 @@ def test_wrong_vs_correct(model_input_table, model_options):
     catalog["model_input_table"] = model_input_table
     catalog["params:model_options"] = model_options
     result = SequentialRunner().run(create_pipeline(), catalog)
-    with pytest.raises(TypeError):
-        result["metrics"]["r2_score"]
+    # The WRONG line fails exactly as the skill's comment says.
+    with pytest.raises(TypeError, match="'MemoryDataset' object is not subscriptable"):
+        result["metrics"]["r2_score"] > 0
     assert "r2_score" in result["metrics"].load()
 
 
@@ -77,3 +78,72 @@ def test_slice_to_intermediate(model_input_table, model_options):
     result = SequentialRunner().run(create_pipeline().to_outputs("X_train"), catalog)
     X_train = result["X_train"].load()
     assert len(X_train) == 4
+
+
+# --- iteration 2 (2026-10-13): new snippets, WRONG lines included ---
+
+TEST_ENV = PROJECT_PATH / "conf" / "test"
+CORRECT_YAML = """model_options:
+  test_size: 0.5
+  random_state: 3
+  features: [engines, passenger_capacity, crew]
+"""
+WRONG_YAML = """model_options:
+  test_size: 0.5
+"""
+
+
+def _with_test_env(yaml_text, body):
+    TEST_ENV.mkdir(exist_ok=True)
+    (TEST_ENV / "parameters_data_science.yml").write_text(yaml_text)
+    try:
+        bootstrap_project(PROJECT_PATH)
+        body()
+    finally:
+        (TEST_ENV / "parameters_data_science.yml").unlink()
+        TEST_ENV.rmdir()
+
+
+def test_env_assert_snippet_with_correct_yaml():
+    def body():
+        with KedroSession.create(project_path=PROJECT_PATH, env="test") as session:
+            assert session.load_context().params["model_options"]["test_size"] == 0.5
+            session.run(pipeline_names=["data_science"])
+    _with_test_env(CORRECT_YAML, body)
+
+
+def test_env_wrong_yaml_drops_siblings_and_split_data_fails():
+    def body():
+        with KedroSession.create(project_path=PROJECT_PATH, env="test") as session:
+            assert session.load_context().params["model_options"] == {"test_size": 0.5}
+        with KedroSession.create(project_path=PROJECT_PATH, env="test") as session:
+            with pytest.raises(KeyError, match="features"):  # split_data fails
+                session.run(pipeline_names=["data_science"])
+    _with_test_env(WRONG_YAML, body)
+
+
+def test_misspelled_env_empty_params_and_run_raises():
+    from kedro.config import MissingConfigException
+    bootstrap_project(PROJECT_PATH)
+    with KedroSession.create(project_path=PROJECT_PATH, env="tset") as session:
+        with pytest.warns(UserWarning, match="Parameters not found"):
+            assert session.load_context().params == {}
+    with KedroSession.create(project_path=PROJECT_PATH, env="tset") as session:
+        with pytest.raises(MissingConfigException):
+            session.run(pipeline_names=["data_science"])
+
+
+def _mutate(df):
+    df["engines"] = 0
+    return df
+
+
+def test_memorydataset_copy_protects_fixture(model_input_table):
+    from kedro.pipeline import Node, Pipeline
+    before = model_input_table.copy()
+    catalog = DataCatalog()
+    catalog["model_input_table"] = model_input_table
+    SequentialRunner().run(Pipeline([Node(_mutate, "model_input_table", "out")]), catalog)
+    pd.testing.assert_frame_equal(model_input_table, before)
+    _mutate(model_input_table)  # a direct call does mutate
+    assert (model_input_table["engines"] == 0).all()

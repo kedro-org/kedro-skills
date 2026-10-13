@@ -94,6 +94,25 @@ Suites live here rather than under `skills/` because `skills/` is packaged into 
 5. Use `forbid()` from `lib/blocks.js` for deterministic checks (it only looks at code blocks and skips blocks introduced by a line like "Do not use:", so explaining a wrong pattern does not fail) and add an `llm-rubric`.
 6. Run with `ARGS="--filter-providers gpt-4o"`. Tests that fail on baseline show what the skill fixes. A test the baseline passes is still worth keeping: it catches a skill that makes the answer worse, for example by stating a wrong rule.
 7. If a model labels code blocks in a format `blocks.js` misses, add a case to `lib/blocks.test.js`.
+8. Unit-test the suite's own JS checks against hand-written good and bad answers in `evals/skills/<dir>/*.test.js`. `make eval-test` runs them alongside the `lib/` tests.
+
+### Variants of one skill
+
+`testing-pipelines-raw` and `testing-pipelines-skill-creator` are two versions of the same skill (see `docs/skill-creation-comparison/`). Their tests and checks live once, in `evals/skills/testing-pipelines-shared/`, and each variant's `promptfooconfig.yaml` loads them with `tests: file://../testing-pipelines-shared/tests.yaml`. Only `skill_content` differs, so both variants are graded on identical tasks. The shared directory has no `promptfooconfig.yaml`, so `make eval` skips it.
+
+```bash
+make eval-skill SKILL=testing-pipelines-raw
+make eval-skill SKILL=testing-pipelines-skill-creator
+```
+
+To see both variants side by side, run the combined config instead. It has five prompt columns on the same tests: `with-skill:raw` and `with-skill:skill-creator` (the current skills), `v1:raw` and `v1:skill-creator` (the iteration 1 copies in `docs/skill-creation-comparison/v1/`, for before/after) and `baseline`. `testing-pipelines-shared/prompts.js` builds the skill prompts so they match the per-variant prompts exactly:
+
+```bash
+make eval-config CONFIG=evals/skills/testing-pipelines-shared/compare.yaml
+npx promptfoo@0.123.1 view
+```
+
+`gate.js` treats any `with-skill:<variant>` label as with-skill, so a failure in either current variant fails the run. The `v1:` columns are reported but never fail it. Results go to `evals/results/testing-pipelines-shared-compare.json`.
 
 ## Refreshing the fixture
 

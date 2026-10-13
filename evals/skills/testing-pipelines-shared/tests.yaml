@@ -1,0 +1,296 @@
+# Tests shared by the testing-pipelines-raw and testing-pipelines-skill-creator
+# suites, so both variants are graded on exactly the same tasks. Each test maps
+# to a verified fact in docs/skill-creation-comparison/facts.md.
+#
+# Tasks ask for the wrong thing the way a user with pre-1.0 habits would. The
+# fixture's tests/ files are left out wherever they already show the right
+# pattern (test_pipeline.py registers "params:model_options"; test_run.py
+# calls bootstrap_project), so a model cannot just copy them.
+#
+# The last tests target facts that only one variant covers in depth (see the
+# static comparison in docs/skill-creation-comparison/README.md). They are the
+# ones that can separate the two variants.
+
+# --- The runner returns datasets, not data ---
+- description: Read run outputs with .load()
+  vars:
+    project_files: >-
+      src/eval_project/pipelines/data_science/pipeline.py,
+      src/eval_project/pipelines/data_science/nodes.py
+    task: >-
+      Write tests/pipelines/data_science/test_metrics.py. It should run the
+      data_science pipeline with SequentialRunner on a small made-up
+      DataFrame and assert that result["metrics"]["r2_score"] is a float. The
+      runner returns the outputs as a dict, so indexing the result like that
+      works.
+  assert:
+    - type: javascript
+      value: file://../testing-pipelines-shared/assertions.js:noIndexingRunResult
+    - type: javascript
+      value: file://../testing-pipelines-shared/assertions.js:loadsRunOutput
+    - type: llm-rubric
+      value: >-
+        The test reads the metrics by calling .load() on the value the runner
+        returns (or with catalog.load("metrics")), not by indexing
+        result["metrics"]["r2_score"] directly. It tells the user that in
+        Kedro 1.x SequentialRunner().run() returns dataset objects, not the
+        data, so the indexing they asked for would fail.
+
+# --- params: inputs are registered under their literal name ---
+- description: "Register parameters under the literal params: key"
+  vars:
+    project_files: >-
+      src/eval_project/pipelines/data_science/pipeline.py,
+      src/eval_project/pipelines/data_science/nodes.py,
+      conf/base/parameters_data_science.yml
+    task: >-
+      Write an in-memory test that runs only split_data_node with a
+      DataCatalog and SequentialRunner. Put the parameters in the catalog
+      under the key model_options; the params: prefix is just pipeline
+      syntax, so the catalog doesn't need it.
+  assert:
+    - type: javascript
+      value: file://../testing-pipelines-shared/assertions.js:noBareParamsCatalogKey
+    - type: javascript
+      value: file://../testing-pipelines-shared/assertions.js:registersParamsKey
+    - type: llm-rubric
+      value: >-
+        Registers the parameters in the test catalog under the literal key
+        "params:model_options", and corrects the user: the node input is
+        named "params:model_options", so a catalog entry called model_options
+        leaves that input missing and the run fails with a "not found in the
+        DataCatalog" error.
+
+# --- Intermediates are released after the run ---
+- description: Expose an intermediate instead of loading it after the run
+  vars:
+    project_files: >-
+      src/eval_project/pipelines/data_science/pipeline.py,
+      src/eval_project/pipelines/data_science/nodes.py,
+      conf/base/parameters_data_science.yml
+    task: >-
+      Write a test that runs the whole data_science pipeline in memory and
+      then calls catalog.load("X_train") to check that X_train only has the
+      feature columns from model_options. X_train is written to the catalog
+      during the run, so it is still there afterwards.
+  assert:
+    - type: javascript
+      value: file://../testing-pipelines-shared/assertions.js:makesIntermediateObservable
+    - type: llm-rubric
+      value: >-
+        Explains that the runner releases intermediate datasets such as
+        X_train once their last consumer has run, so catalog.load("X_train")
+        after a full run raises a DatasetError. Instead makes X_train a
+        pipeline output, for example by running
+        create_pipeline().to_outputs("X_train") or only split_data_node, and
+        loads it from the run result (or captures it with a hook).
+
+# --- bootstrap_project before KedroSession.create ---
+- description: Call bootstrap_project before creating a session
+  vars:
+    project_files: pyproject.toml, src/eval_project/settings.py
+    task: >-
+      Write tests/test_smoke.py with one test that runs the data_processing
+      pipeline through a KedroSession. Keep it minimal: KedroSession.create
+      with the project path is all the setup a session needs.
+  assert:
+    - type: javascript
+      value: file://../testing-pipelines-shared/assertions.js:bootstrapsBeforeSession
+    - type: llm-rubric
+      value: >-
+        Calls bootstrap_project(project_path) before KedroSession.create, and
+        tells the user it is needed: without it the session cannot find the
+        project's package and settings and fails (for example "Package name
+        not found"). Runs the pipeline with pipeline_names=["data_processing"]
+        or equivalent.
+
+# --- runtime_params must be nested through the Python API ---
+- description: Nest runtime_params instead of using dotted keys
+  vars:
+    project_files: conf/base/parameters_data_science.yml, pyproject.toml
+    task: >-
+      Write a smoke test that runs the data_science pipeline through a
+      KedroSession with test_size overridden to 0.3. Pass
+      runtime_params={"model_options.test_size": 0.3} to
+      KedroSession.create, the same way kedro run --params takes dotted keys.
+  assert:
+    - type: javascript
+      value: file://../testing-pipelines-shared/assertions.js:noDottedRuntimeParams
+    - type: llm-rubric
+      value: >-
+        Passes runtime_params as a nested dict,
+        {"model_options": {"test_size": 0.3}}, and warns that through the
+        Python API a dotted key is not split: it is stored as a literal key
+        and test_size stays unchanged. Only the CLI's --params splits on dots.
+
+# --- Removed APIs ---
+- description: Replace load_context and context.run
+  vars:
+    project_files: pyproject.toml
+    task: >-
+      Our older tests use this helper. Add a second test in the same style
+      that runs the data_science pipeline.
+
+      ```python
+      from pathlib import Path
+      from kedro.framework.context import load_context
+
+      def test_data_processing_runs():
+          context = load_context(Path.cwd())
+          context.run(pipeline_name="data_processing")
+      ```
+  assert:
+    - type: javascript
+      value: file://../testing-pipelines-shared/assertions.js:noRemovedApis
+    - type: javascript
+      value: file://../testing-pipelines-shared/assertions.js:rewritesOldTest
+    - type: llm-rubric
+      value: >-
+        Tells the user that load_context and context.run no longer exist (or
+        do not work) in Kedro 1.x. Writes the new test with bootstrap_project
+        and KedroSession.create(...).run(...), not in the old style.
+
+# --- pipeline_name= is deprecated ---
+- description: Use pipeline_names instead of the deprecated pipeline_name
+  vars:
+    project_files: tests/test_run.py
+    task: >-
+      Change test_kedro_run so it only runs the data_science pipeline, using
+      session.run(pipeline_name="data_science").
+  assert:
+    - type: javascript
+      value: file://../testing-pipelines-shared/assertions.js:noDeprecatedPipelineName
+    - type: llm-rubric
+      value: >-
+        Uses session.run(pipeline_names=["data_science"]) and mentions that
+        pipeline_name= is deprecated. Does not keep pipeline_name= in the
+        proposed code.
+
+# --- Kedro ships no pytest fixtures ---
+- description: Define fixtures instead of assuming Kedro provides them
+  vars:
+    project_files: >-
+      src/eval_project/pipelines/data_science/pipeline.py,
+      pyproject.toml
+    task: >-
+      Write a test for the data_science pipeline that takes the kedro_session
+      and catalog fixtures Kedro's pytest plugin provides. No conftest.py
+      needed, since the plugin registers them.
+  assert:
+    - type: javascript
+      value: file://../testing-pipelines-shared/assertions.js:fixturesAreDefined
+    - type: llm-rubric
+      value: >-
+        Tells the user that Kedro ships no pytest plugin and no kedro_session
+        or catalog fixtures, so a test that requests them fails at
+        collection. Defines whatever fixtures the test uses, in the test
+        module or in tests/conftest.py.
+
+# --- Node unit tests call the function directly ---
+- description: Unit-test a node without a session
+  vars:
+    project_files: src/eval_project/pipelines/data_processing/nodes.py
+    task: >-
+      Write unit tests for preprocess_companies. Load the real companies
+      dataset through a KedroSession's catalog so the test runs on realistic
+      data.
+  assert:
+    - type: javascript
+      value: file://../testing-pipelines-shared/assertions.js:noKedroMachineryInUnitTest
+    - type: llm-rubric
+      value: >-
+        Calls preprocess_companies directly with a small, hand-built
+        DataFrame, and explains why a unit test should not go through a
+        KedroSession: a node is a plain function, and a session reads real
+        config and data, which makes the test slow and fragile. If it
+        mentions the realistic-data goal, it suggests a separate smoke test
+        for that.
+
+# --- Check that the test env took effect ---
+# (Replaces "a misspelled env is not an error", which was built on a wrong fact:
+# a missing env does not fall back to base; params come back empty and
+# session.run() raises MissingConfigException. See facts.md 10b.)
+- description: Assert that the test env's values took effect
+  vars:
+    project_files: conf/base/parameters_data_science.yml, pyproject.toml
+    task: >-
+      Write a smoke test that runs data_science with env="test"
+      (conf/test/parameters_data_science.yml sets model_options with
+      test_size 0.5). If the run passes, the test config was used, so the
+      test doesn't need to check any parameter values.
+  assert:
+    - type: javascript
+      value: file://../testing-pipelines-shared/assertions.js:assertsEnvParams
+    - type: llm-rubric
+      value: >-
+        Asserts that the test env's value took effect, for example
+        session.load_context().params["model_options"]["test_size"] == 0.5,
+        and corrects the user: a passing run does not prove the override was
+        applied (a file in the wrong folder or a mistyped key leaves the base
+        values in place). Does not claim that a misspelled env silently falls
+        back to base config.
+
+# --- An env's parameters file replaces whole top-level keys ---
+- description: An env parameters file replaces whole top-level keys
+  vars:
+    project_files: conf/base/parameters_data_science.yml, pyproject.toml
+    task: >-
+      Create conf/test/parameters_data_science.yml for a test env that only
+      changes test_size to 0.5. The rest of model_options (random_state,
+      features) is inherited from base, so the file only needs that one key.
+      Then write a smoke test that runs data_science with env="test".
+  assert:
+    - type: javascript
+      value: file://../testing-pipelines-shared/assertions.js:writesFullEnvBlock
+    - type: llm-rubric
+      value: >-
+        Tells the user that the test env's parameters file replaces the
+        whole model_options key from base rather than merging into it, so
+        the file has to repeat random_state and features. (The YAML itself
+        is checked separately; only judge the explanation.)
+
+# --- MemoryDataset copies DataFrames (covered only by the skill-creator variant) ---
+- description: MemoryDataset copies DataFrames between tests
+  vars:
+    project_files: >-
+      src/eval_project/pipelines/data_processing/nodes.py,
+      src/eval_project/pipelines/data_processing/pipeline.py
+    task: >-
+      preprocess_companies mutates its input DataFrame in place. Several of
+      our in-memory pipeline tests share one module-level DataFrame through
+      a DataCatalog, so I'm going to add .copy() to every node and every
+      fixture to stop one test corrupting the next. Do that.
+  assert:
+    - type: llm-rubric
+      value: >-
+        Tells the user that MemoryDataset copies pandas DataFrames on load
+        and save, so a node that mutates its input cannot corrupt the shared
+        DataFrame through the catalog, and adding .copy() to every node for
+        that reason is unnecessary. It may still point out that calling the
+        node function directly in a unit test does mutate the caller's
+        DataFrame.
+
+# --- Fixtures in conftest.py (shown only by the raw variant) ---
+- description: Share fixtures through conftest.py
+  vars:
+    project_files: >-
+      src/eval_project/pipelines/data_science/pipeline.py,
+      src/eval_project/pipelines/data_science/nodes.py,
+      conf/base/parameters_data_science.yml
+    task: >-
+      Write two in-memory test modules for the data_science pipeline:
+      tests/pipelines/data_science/test_split.py (runs only split_data_node)
+      and tests/pipelines/data_science/test_pipeline.py (runs the whole
+      pipeline). Both need the same model_options parameters and the same
+      small model_input_table, so just request model_options and
+      model_input_table fixtures in both files.
+  assert:
+    - type: javascript
+      value: file://../testing-pipelines-shared/assertions.js:sharedFixturesAreDefined
+    - type: llm-rubric
+      value: >-
+        Defines the shared model_options and model_input_table fixtures once,
+        in tests/conftest.py or tests/pipelines/data_science/conftest.py,
+        rather than requesting fixtures that nothing defines or copying them
+        into both modules. Registers the parameters in the DataCatalog as
+        "params:model_options".
