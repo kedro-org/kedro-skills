@@ -1,3 +1,0 @@
-Answer the question using only the evidence below. If the evidence is not enough, say you do not know.
-
-Question: {question}
