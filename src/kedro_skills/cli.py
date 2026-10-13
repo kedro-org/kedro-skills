@@ -118,7 +118,7 @@ def install_cmd(
     ides: str | None,
     force: bool,
 ) -> None:
-    """Install a skill into the current Kedro project."""
+    """Install a skill into the current Kedro project or directory."""
     project_root = find_project_root()
     parsed_ides = _parse_ides(ides)
 
@@ -189,7 +189,7 @@ def update_cmd(force: bool) -> None:
     "--force", is_flag=True, help="Remove files even if they have been modified."
 )
 def uninstall_cmd(skill_id: str, force: bool) -> None:
-    """Uninstall a skill from the current Kedro project."""
+    """Uninstall a skill from the current Kedro project or directory."""
     project_root = find_project_root()
 
     from kedro_skills.orchestrator import uninstall_skill  # noqa: PLC0415
