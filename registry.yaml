@@ -46,3 +46,19 @@ skills:
       - copilot
       - claude
       - codex
+
+  - id: build-demo
+    category: onboarding
+    description: >-
+      Builds a new, small, end-to-end Kedro demo for someone's use case, with a
+      working project, a Kedro-Viz walkthrough and optional material for the
+      audience. Use when someone asks for a Kedro demo or proof of concept, or
+      wants to see whether and how Kedro would work for their problem. Not for
+      changing or explaining an existing project.
+    paths:
+      - "pyproject.toml"
+    ide_support:
+      - cursor
+      - copilot
+      - claude
+      - codex
