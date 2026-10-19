@@ -67,7 +67,7 @@ Pass `env='<name>'`, `conf_source='<path>'` (Kedro 1.5.0+) or `runtime_params={.
 
 It does not show what hooks change during a run or prove that the pipelines run. For the API itself, see `https://docs.kedro.org/en/{version}/inspect/inspect-project/` with the installed version or `stable`.
 
-**If `datasets` and `parameters` come back unexpectedly empty, the configuration may not have loaded.** Usually the run-environment folder (often `conf/local/`, which the template commits with a `.gitkeep`) is missing, and every command that loads the configuration fails with `MissingConfigException` until it exists. An empty folder is fine. Check that folder, `CONF_SOURCE`, the environment name, `config_patterns` and the files' contents before naming the cause, suggest creating the folder only if it is missing, and explain from the YAML files meanwhile rather than report an empty catalog.
+**If `datasets` and `parameters` come back unexpectedly empty, the configuration may not have loaded.** Usually the run-environment folder (often `conf/local/`, which the template commits with a `.gitkeep`) is missing: commands such as `kedro run` then fail with `MissingConfigException`, while the snapshot returns empty sections instead. An empty folder is fine. Check that folder, `CONF_SOURCE`, the environment name, `config_patterns` and the files' contents before naming the cause, suggest creating the folder only if it is missing, and explain from the YAML files meanwhile rather than report an empty catalog.
 
 **3. Cross-check with the files.**
 
