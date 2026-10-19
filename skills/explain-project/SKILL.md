@@ -65,9 +65,9 @@ Pass `env='<name>'`, `conf_source='<path>'` (Kedro 1.5.0+) or `runtime_params={.
 - `datasets`: catalog entries, plus pipeline datasets resolved through factory patterns, with `type` and `filepath` only. Read the catalog files for patterns, layers, versioning, `load_args` and `credentials` keys.
 - `parameters`: top-level parameter keys, without values or the file that sets them. Find the file with `grep -rn '^<key>:'` in the configuration folder, skipping credentials files, before naming it.
 
-It does not show what hooks change during a run or prove that the pipelines run.
+It does not show what hooks change during a run or prove that the pipelines run. For the API itself, see `https://docs.kedro.org/en/{version}/inspect/inspect-project/` with the installed version or `stable`.
 
-**If `datasets` and `parameters` come back empty although the configuration folder has catalog and parameter files, the configuration did not load.** Usually the run-environment folder (often `conf/local/`) is missing: the template commits it with a `.gitkeep`, and every command that loads the configuration, `kedro run` included, fails with `MissingConfigException` until it exists. An empty folder is fine. Check that folder, `CONF_SOURCE` and the environment name before naming the cause, suggest creating the folder only if it is missing, and explain from the YAML files meanwhile rather than report an empty catalog.
+**If `datasets` and `parameters` come back unexpectedly empty, the configuration may not have loaded.** Usually the run-environment folder (often `conf/local/`, which the template commits with a `.gitkeep`) is missing, and every command that loads the configuration fails with `MissingConfigException` until it exists. An empty folder is fine. Check that folder, `CONF_SOURCE`, the environment name, `config_patterns` and the files' contents before naming the cause, suggest creating the folder only if it is missing, and explain from the YAML files meanwhile rather than report an empty catalog.
 
 **3. Cross-check with the files.**
 
@@ -95,7 +95,7 @@ Compare the registry with the pipeline folders. Unless the registry code leaves 
 
 A node's input comes from whichever node outputs a dataset of the same name; `params:<key>` and `parameters` inputs come from the parameters. Nodes on independent branches have no fixed order between them, and the order of `Node(...)` calls in `pipeline.py` means nothing. For dict inputs or outputs, read the dict to match function arguments or returned keys to datasets; the snapshot's lists lose that mapping.
 
-A dataset produced by one pipeline and read by another links them. Such a pipeline runs on its own only if something provides the linking dataset: data already saved through its catalog entry or factory, or a hook. With no provider, `kedro run --pipeline <name>` stops before any node runs with `ValueError: Pipeline input(s) {...} not found in the DataCatalog`, as does a `params:` input with no matching parameter. With an entry whose file was never saved, the run starts and fails later with `DatasetError`, after other nodes may have overwritten outputs.
+A dataset produced by one pipeline and read by another links them. Such a pipeline runs on its own only if something provides the linking dataset: data already saved through its catalog entry or factory, or a hook. If the input is absent from the effective catalog, `kedro run --pipeline <name>` stops before any node runs with `ValueError: Pipeline input(s) {...} not found in the DataCatalog`, as does a `params:` input with no matching parameter. With an entry whose file was never saved, the run starts and fails later with `DatasetError`, after other nodes may have overwritten outputs.
 
 ### 4. A dataset with no catalog entry is in memory and is not saved
 
@@ -131,7 +131,7 @@ kedro viz run --include-hooks                # Kedro-Viz 9.0.0+; runs the projec
 kedro viz run --lite                         # Kedro-Viz 10.0.0+; works without the project's dependencies
 ```
 
-Offer only the flags the installed Kedro-Viz supports, not a list to try. Say what this project will show: its registered pipelines by name, and the nodes and datasets your explanation discussed. Mention namespace groups, layers or hook-added datasets only if the project has them. Describe it as what the user will see, not as something you viewed.
+Offer only flags the installed Kedro-Viz supports. Say what this project will show: its registered pipelines by name, and the nodes and datasets your explanation discussed. Mention namespace groups, layers or hook-added datasets only if the project has them. Describe it as what the user will see, not as something you viewed.
 
 - `--lite` is experimental: it shows the pipeline with dataset types and layers, but a dataset whose library is missing appears as `MemoryDataset`, which does not mean it is unsaved.
 - Layers come from `metadata: kedro-viz: layer:` in catalog entries.
@@ -147,11 +147,11 @@ For a walkthrough, lead with what the project does and its main path from inputs
 4. **Data Catalog**: saved datasets by layer or `data/` folder with type and path, factory patterns, versioned datasets, credential keys by name, and what stays in memory, including split and intermediate outputs.
 5. **Parameters and configuration**: parameter groups and the nodes that read them, the environments and which one you explained, and settings that differ from the template. Apply the merge rules under Find the project, and treat run-time values the user has not given as unknowns.
 6. **Where the logic lives**: node functions as `file:line`, plus code outside nodes that changes results, such as helpers, SQL, hooks and custom datasets.
-7. **Kedro features in use**: only those present, with where and how this project uses them, without teaching how to write them.
+7. **Kedro features in use**: only those present, with where and how this project uses them.
 8. **Worth investigating**: concrete findings, each with its evidence and the next thing to check. For example: a final output or model that nothing saves, catalog entries no registered pipeline uses, pipeline folders that fail to import, parameters no node reads, nodes without `name=` and leftovers from removed features. No generic advice such as "add more tests"; configuration or access you cannot resolve is a limit of the explanation, not a defect.
 9. **See it in Kedro-Viz**: the command, and what to look at first.
 
-Back each statement about code or configuration with a file reference (`path:line` when you have one), and keep what the code shows apart from what you infer. Before saying a file or folder is missing or empty, list it with `ls -a <path>`: globs, `ls` of a parent folder and `git ls-files` miss `.gitkeep` files and git-ignored data. For a node without `name=`, use its function name, as Kedro-Viz does. Quote only the parts of the snapshot and catalog the answer needs, and skip standard template files (`__main__.py`, `settings.py` comments, `conf/logging.yml`, empty parameter files) unless they differ from the template.
+Back each statement about code or configuration with a file reference (`path:line` when you have one), and keep what the code shows apart from what you infer. Before saying a file or folder is missing or empty, list it with `ls -a <path>`: globs, `ls` of a parent folder and `git ls-files` miss `.gitkeep` files and git-ignored data. Quote only the parts of the snapshot and catalog the answer needs, and skip standard template files (`__main__.py`, `settings.py` comments, `conf/logging.yml`, empty parameter files) unless they differ from the template.
 
 **Before answering, check** every arrow against node inputs and outputs, every storage claim against catalog entries, factories, hooks and dataset types, every node output against the dataset that saves it, and every parameter value against the merge rules. Then say what the explanation is based on (files, a snapshot, or a Kedro-Viz graph you actually saw) and what you could not verify; claim test runs, data access or pipeline runs only if they happened.
 
