@@ -6,8 +6,9 @@ Shared input for both skill variants (`testing-pipelines-raw` and
 spaceflights-pandas`). The evidence tests are in
 [`verification/test_facts.py`](verification/test_facts.py); all 20 pass.
 
-Starting point: the "what agents get wrong" list in the skill roadmap and the
-source doc `kedro/docs/develop/automated_testing.md`. The source doc covers setup
+Starting point: a list of five mistakes we suspected agents would make (written
+by the skill author, not from any official source) and the source doc
+`kedro/docs/develop/automated_testing.md`. The source doc covers setup
 and a single `KedroSession` smoke test, and says nothing about pipeline tests with
 an in-memory catalog. Most facts below therefore come from source.
 
@@ -36,9 +37,9 @@ an in-memory catalog. Most facts below therefore come from source.
 | 12b | `MemoryDataset` copies pandas DataFrames and numpy arrays on load/save, so mutating a loaded frame doesn't change the catalog | ✅ True | `test_f12b`; `memory_dataset.py` `_infer_copy_mode` |
 | 12c | The runner logs `Pipeline execution completed successfully` at INFO on `kedro` loggers. The spaceflights starter test asserts on this through `caplog` | ✅ True | `test_f12c`; starter `tests/pipelines/data_science/test_pipeline.py` |
 
-## Roadmap claims, after verification
+## Suspected claims, after verification
 
-| Roadmap claim | Outcome |
+| Suspected claim | Outcome |
 |---|---|
 | Old `KedroContext` / `context.run()` pattern | Confirmed (1) |
 | Omitting `bootstrap_project()` | Confirmed, with the exact error (2) |
@@ -46,7 +47,7 @@ an in-memory catalog. Most facts below therefore come from source.
 | Inventing `pytest-kedro` fixtures | Confirmed (4) |
 | Running a whole session to test one node | Confirmed as bad practice (5, 10f) |
 
-Not in the roadmap, found during verification: 6 (runner returns datasets), 6b
+Not in the suspected list, found during verification: 6 (runner returns datasets), 6b
 (intermediates are released), 10a–c (runtime params, missing env, env merge), 10f
 (smoke tests write real files).
 

@@ -1,0 +1,52 @@
+# Requests to the skill picker. "trigger": the testing skill should be named.
+# "none": it should not, either because the request is not about testing, or
+# because it is plain pytest with no Kedro involved (the raw description says
+# it adds nothing there). Requests avoid the wording of the descriptions on purpose.
+- description: "Add a unit test for preprocess_companies"
+  vars: { request: "Add a unit test for the preprocess_companies node.", expect: trigger }
+- description: "Runtime error after a pipeline run"
+  vars: { request: "My test fails with 'MemoryDataset object is not subscriptable' after I run the pipeline. What's wrong?", expect: trigger }
+- description: "Smoke test through a session"
+  vars: { request: "Write a smoke test that runs the data_science pipeline through a Kedro session.", expect: trigger }
+- description: "Check a split keeps the test fraction"
+  vars: { request: "I need a check that split_data keeps the test_size fraction of rows.", expect: trigger }
+- description: "KedroSession.create fails in pytest"
+  vars: { request: "Why does KedroSession.create fail with 'Package name not found' when I run pytest?", expect: trigger }
+- description: "Shared fixture for pipeline tests"
+  vars: { request: "Can you add a fixture for model_options that my pipeline tests can share?", expect: trigger }
+- description: "In-memory pipeline run with a small frame"
+  vars: { request: "Run the data_processing pipeline in memory with a small DataFrame and check the output.", expect: trigger }
+- description: "Test that depends on working directory"
+  vars: { request: "tests/test_run.py only works when I run pytest from the project root. Fix it.", expect: trigger }
+- description: "Intermediate output after a run"
+  vars: { request: "After the run, catalog.load fails for X_train. Help me check X_train is produced.", expect: trigger }
+- description: "Coverage for pipeline tests"
+  vars: { request: "Add coverage reporting to my pipeline tests.", expect: trigger }
+- description: "Review an old-style test file"
+  vars: { request: "Review this test file. It uses context.run() from an old example.", expect: trigger }
+- description: "Metrics node unit tests"
+  vars: { request: "Write unit tests for the metrics calculation node.", expect: trigger }
+- description: "Add a dataset to the catalog"
+  vars: { request: "Add a dataset for the raw shuttles CSV to conf/base/catalog.yml.", expect: none }
+- description: "Add a parameter"
+  vars: { request: "Add a learning_rate parameter to parameters.yml and use it in a node.", expect: none }
+- description: "Explain the project"
+  vars: { request: "Explain how this Kedro project is wired together.", expect: none }
+- description: "New pipeline"
+  vars: { request: "Create a new pipeline called reporting with a node that plots the metrics.", expect: none }
+- description: "Plain pytest, no Kedro"
+  vars: { request: "Write a pytest test for a plain Python function that parses dates. No Kedro involved.", expect: none }
+- description: "CI workflow"
+  vars: { request: "Set up a GitHub Actions workflow that runs the linter on push.", expect: none }
+- description: "Type hints"
+  vars: { request: "Refactor nodes.py to use type hints.", expect: none }
+- description: "Pandas groupby"
+  vars: { request: "Why is my pandas groupby returning NaN?", expect: none }
+- description: "LLM context node"
+  vars: { request: "Add an llm_context_node that calls a summariser tool.", expect: none }
+- description: "Rename a dataset"
+  vars: { request: "Rename the output dataset in the feature engineering pipeline.", expect: none }
+- description: "kedro run options"
+  vars: { request: "What's the difference between kedro run and kedro run --env?", expect: none }
+- description: "README section"
+  vars: { request: "Write a README section on installing the project.", expect: none }

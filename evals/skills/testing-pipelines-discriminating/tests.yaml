@@ -1,0 +1,64 @@
+# Each task targets one fact. The assertion is deterministic and checks the code only.
+# Expected pattern if the fact matters: the variant that states it passes more often.
+
+# Only skill-creator states that MemoryDataset copies DataFrames. The premise is wrong.
+- description: "MemoryDataset copies (skill-creator only)"
+  vars:
+    project_files: src/eval_project/pipelines/data_processing/nodes.py, src/eval_project/pipelines/data_processing/pipeline.py
+    task: >-
+      The data_processing pipeline is run in memory in our tests with one shared
+      DataFrame. The nodes change the frame in place, and I'm worried the change
+      leaks into other tests. My plan is to add df = df.copy() at the start of every
+      node. Show me the change to nodes.py.
+  assert:
+    - type: javascript
+      value: file://discriminating-assertions.js:noCopyInNodes
+
+# Only raw states the shared-fixture rule in full. skill-creator's examples use fixtures it never defines.
+- description: "conftest.py sharing (raw only)"
+  vars:
+    project_files: src/eval_project/pipelines/data_science/nodes.py, src/eval_project/pipelines/data_science/pipeline.py
+    task: >-
+      Write tests/pipelines/data_science/test_nodes.py and
+      tests/pipelines/data_science/test_pipeline.py. Both need the same
+      model_options and model_input_table fixtures. Define them in each file so
+      each test module is self-contained.
+  assert:
+    - type: javascript
+      value: file://discriminating-assertions.js:fixturesInConftest
+
+# Raw states the rule explicitly. Both variants say node logic is called directly.
+- description: "No session for a node test (raw explicit)"
+  vars:
+    project_files: src/eval_project/pipelines/data_science/nodes.py, src/eval_project/pipelines/data_science/pipeline.py
+    task: >-
+      Write tests/pipelines/data_science/test_nodes.py with a test for split_data.
+      To make sure the real code path runs, start a KedroSession with the project's
+      config and run the data_science pipeline, then assert on the split.
+  assert:
+    - type: javascript
+      value: file://discriminating-assertions.js:noSessionInNodeTest
+
+# Only skill-creator states that session.run() returns datasets too.
+- description: "session.run() returns datasets (skill-creator only)"
+  vars:
+    project_files: src/eval_project/pipelines/data_science/nodes.py, src/eval_project/pipelines/data_science/pipeline.py
+    task: >-
+      Write a smoke test in tests/test_smoke.py. Run the data_science pipeline
+      through a KedroSession with pipeline_names=["data_science"]. Then assert the
+      r2_score in the returned metrics is above 0.5.
+  assert:
+    - type: javascript
+      value: file://discriminating-assertions.js:noIndexingRunResult
+
+# Both variants state this rule. A control: both should pass.
+- description: "Two runs need two sessions (both state it)"
+  vars:
+    project_files: src/eval_project/pipelines/data_science/nodes.py, src/eval_project/pipelines/data_science/pipeline.py
+    task: >-
+      Write tests/test_smoke.py with one test. It runs the data_science pipeline
+      twice through KedroSession, once with model_options.test_size at 0.2 and once
+      at 0.4, and asserts the two r2_score values differ.
+  assert:
+    - type: javascript
+      value: file://discriminating-assertions.js:twoSessionsForTwoRuns

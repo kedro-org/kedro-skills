@@ -1,0 +1,467 @@
+diff --git a/skills/testing-pipelines-raw/SKILL.md b/skills/testing-pipelines-skill-creator/SKILL.md
+index b0f97cd..bb7b393 100644
+--- a/skills/testing-pipelines-raw/SKILL.md
++++ b/skills/testing-pipelines-skill-creator/SKILL.md
+@@ -1,85 +1,99 @@
+ ---
+-name: testing-pipelines-raw
++name: testing-pipelines-skill-creator
+ description: >-
+-  Kedro testing guidance for tests/**/*.py in a Kedro project. Use when writing
+-  unit tests for node functions, pipeline tests with DataCatalog, MemoryDataset
+-  and SequentialRunner, or KedroSession smoke tests. Adds nothing for tests
+-  that do not touch Kedro.
++  How to write tests for a Kedro 1.x project in tests/**/*.py, covering unit tests for
++  node functions, in-memory pipeline tests with DataCatalog, MemoryDataset and
++  SequentialRunner, and KedroSession smoke tests. Use this whenever you write,
++  fix or review a test that imports kedro or a Kedro project's nodes and
++  pipelines, even when the request is just "add tests for this pipeline" or
++  "why does my pipeline test fail". Kedro 1.x changed what runners return and
++  how sessions start, and older examples get both wrong. Not needed for tests
++  that never touch Kedro.
+ ---
+-# Testing Kedro Nodes and Pipelines
+-
+-Applies to Kedro 1.x. Kedro ships **no pytest plugin and no fixtures**. Every
+-fixture you use (`catalog`, `session`, sample data) must be defined in your own
+-test module or `conftest.py`.
+-
+-## When the request contradicts this skill
+-
+-Users often ask for pre-1.0 patterns. Do not write them just because they were
+-asked for. Write the correct version and say in one sentence what you changed
+-and why.
+-
+-| Asked for | Write instead | Why |
+-|---|---|---|
+-| `result["metrics"]["r2_score"]` | `result["metrics"].load()["r2_score"]` | the runner returns datasets |
+-| catalog key `"model_options"` | `"params:model_options"` | the node input is the literal `params:` name |
+-| `catalog.load("X_train")` after a full run | run `create_pipeline().to_outputs("X_train")` | intermediates are released |
+-| a `KedroSession` to get data for a node test | a small hand-built DataFrame | a node is a plain function |
+-| `session.run(pipeline_name=...)` | `pipeline_names=[...]` | `pipeline_name=` is deprecated |
+-| `runtime_params={"a.b": 1}` | `runtime_params={"a": {"b": 1}}` | dotted keys are not expanded |
+-| `kedro_session` / `catalog` fixtures "from Kedro" | define them in `conftest.py` | Kedro ships none |
+-| `.copy()` in every node to protect test data | nothing | `MemoryDataset` already copies |
+-| a test-env parameters file with only the changed key | the whole top-level key | env files replace top-level keys |
+-| no check on the env's values ("if it runs, the config was used") | assert `session.load_context().params[...]` before `run()` | a passing run does not show which values were loaded |
+-| a new test in the style of an old one using `load_context` / `context.run` | `bootstrap_project` + `KedroSession`, and fix the old test too | those APIs are gone, so the old test is already broken |
+-
+-## Pick the right kind of test
+-
+-| What you are checking | Test type | Needs Kedro objects? |
+-|---|---|---|
+-| A node's logic | Unit test: call the function | No |
+-| Nodes wired together (names, `params:`, outputs) | Pipeline test: `DataCatalog` + `SequentialRunner` | Yes, in memory |
+-| The project boots and runs end to end | Smoke test: `KedroSession` | Yes, real config and data |
+-
+-Prefer the first two. Never start a `KedroSession` to test a single node.
+-
+-## Unit-testing a node
+-
+-A node is a plain Python function. Call it directly.
++# Writing tests for a Kedro project
++
++Kedro tests are ordinary pytest tests. What makes them Kedro-specific is a
++small set of runtime behaviours that look reasonable to guess and are easy to
++guess wrong. This skill covers those. Everything else is plain pytest.
++
++Kedro ships no pytest plugin, so there are no `kedro_session`, `kedro_context`
++or `catalog` fixtures. If a test needs one, define it in the test module or in
++`tests/conftest.py`. A test that asks for a fixture nobody defined fails at
++collection.
++
++## When the request itself is out of date
++
++Many requests carry an assumption from older Kedro or from generic pytest
++habits: "the runner returns a dict, so index it", "the catalog key is just
++`model_options`", "load `X_train` after the run", "use the `kedro_session`
++fixture", "pass `pipeline_name=`", "add `.copy()` everywhere to protect the
++test data", "the test env file only needs the changed key", "if the run
++passes, the test config was used". Each of these produces a test that fails,
++or worse, passes while checking the wrong thing.
++
++So when a request asks for something this skill describes as wrong, write the
++version that works on Kedro 1.x rather than the one that was asked for, and
++add a sentence saying what you changed and why. The sentence matters as much
++as the code: without it the user does not know the assumption was wrong and
++will write the old pattern again in the next test.
++
++Assumptions often arrive with a reason attached, such as "the `params:` prefix
++is just pipeline syntax" or "it was written during the run, so it is still in
++the catalog". A reason makes the request sound checked, but it is the same
++assumption stated more confidently. Compare it with what this skill says
++before writing code, and if they disagree, the reason is the thing to correct.
++
++The same applies to the code a request points at. If the user asks for a new
++test "in the same style" as an existing one that uses `load_context` or
++`context.run`, the existing test is already broken on 1.x, so say that and fix
++it alongside the new one. Otherwise the user finds out from a red CI run.
++
++## Choose the smallest test that answers the question
++
++Each layer up costs more and fails for more reasons, so test at the lowest
++layer that can catch the bug:
++
++1. **Node logic** → call the node function directly. Nodes are plain Python
++   functions, so a unit test needs no catalog, runner or session.
++2. **Wiring** (dataset names, `params:` inputs, which outputs exist) → run the
++   pipeline in memory with `DataCatalog` + `SequentialRunner`.
++3. **The project boots end to end** → `KedroSession` smoke test. It reads the
++   real `conf/` and writes real files to `data/`, so keep it to one or two
++   tests.
++
++## 1. Node unit tests
+ 
+ ```python
+ import pandas as pd
+-from spaceflights.pipelines.data_science.nodes import split_data
++from my_project.pipelines.data_science.nodes import split_data
+ 
+ 
+-def test_split_data_returns_expected_sizes():
+-    data = pd.DataFrame(
+-        {"engines": [1, 2, 3, 4, 5], "crew": [4, 5, 6, 7, 8], "price": [1, 2, 3, 4, 5]}
+-    )
+-    params = {"test_size": 0.2, "random_state": 3, "features": ["engines", "crew"]}
++def test_split_data_holds_out_test_fraction():
++    data = pd.DataFrame({"engines": [1, 2, 3, 4, 5], "price": [1, 2, 3, 4, 5]})
++    params = {"test_size": 0.2, "random_state": 3, "features": ["engines"]}
+ 
+     X_train, X_test, y_train, y_test = split_data(data, params)
+ 
+-    assert len(X_train) == 4
+-    assert len(X_test) == 1
++    assert (len(X_train), len(X_test)) == (4, 1)
+ ```
+ 
+-Pass parameters as the plain dict the node receives. There is no `params:` here.
++The node receives parameters as a plain dict, so pass a dict. The `params:`
++prefix only exists in pipeline wiring.
+ 
+-Build small DataFrames by hand. Do not load real data through a `KedroSession`
+-in a unit test: it reads real config and files, which makes the test slow and
+-fragile. If the real data matters, add a separate smoke test for it.
++Build the input by hand, a few rows with the columns the node uses. Loading
++real data through a `KedroSession` turns a unit test into a slow test that
++depends on `conf/` and files on disk, and a failure no longer points at the
++node. If the real data needs checking, that is a separate smoke test.
+ 
+-## Testing a pipeline in memory
+-
+-Build a `DataCatalog` of `MemoryDataset`s and run with `SequentialRunner`.
++## 2. In-memory pipeline tests
+ 
+ ```python
+ from kedro.io import DataCatalog, MemoryDataset
+ from kedro.runner import SequentialRunner
+-from spaceflights.pipelines.data_science import create_pipeline
++from my_project.pipelines.data_science import create_pipeline
+ 
+ 
+-def test_data_science_pipeline(model_input_table, model_options):
++def test_data_science_pipeline_produces_metrics(model_input_table, model_options):
+     catalog = DataCatalog(
+         {
+             "model_input_table": MemoryDataset(model_input_table),
+@@ -89,67 +103,61 @@ def test_data_science_pipeline(model_input_table, model_options):
+ 
+     result = SequentialRunner().run(create_pipeline(), catalog)
+ 
+-    metrics = result["metrics"].load()  # result values are datasets
++    metrics = result["metrics"].load()
+     assert set(metrics) == {"r2_score", "mae", "max_error"}
+ ```
+ 
+-`catalog["model_input_table"] = df` is equivalent: raw data is wrapped in a
++`catalog["model_input_table"] = df` also works. Raw data is wrapped in a
+ `MemoryDataset` for you.
+ 
+-`MemoryDataset` copies DataFrames on save and load, so a node that mutates its
+-input cannot change your fixture through the catalog. No `.copy()` needed for
+-that. (Calling the node function directly does mutate the frame you pass in.)
+-
+-### The runner returns datasets, not data
++Four behaviours shape these tests:
+ 
+-In Kedro 1.x, `runner.run(...)` returns `{output_name: dataset}` for the
+-pipeline's outputs. Call `.load()` on the value, or use `catalog.load(name)`.
++**The runner returns datasets, not data.** `runner.run()` returns
++`{output_name: dataset}` for the pipeline's outputs. Call `.load()` on each
++value (or use `catalog.load(name)`). Pre-1.0 runners returned the data itself,
++so older examples index straight into the result, as in
++`result["metrics"]["r2_score"]`. On 1.x that fails because the value is a
++`MemoryDataset`.
+ 
+-```python
+-# WRONG: TypeError: 'MemoryDataset' object is not subscriptable
+-assert result["metrics"]["r2_score"] > 0
+-
+-# Correct
+-assert result["metrics"].load()["r2_score"] > 0
+-```
++**Every free input must be in the catalog.** Otherwise the run stops with
++`ValueError: Pipeline input(s) {...} not found in the DataCatalog`.
++`pipeline.inputs()` tells you exactly what to provide.
+ 
+-### Provide every free input, including `params:`
++**Parameters are registered under their literal input name.** If a node
++declares `"params:model_options"`, the catalog key is `"params:model_options"`.
++Registering `"model_options"` leaves the input missing. The prefix is not just
++pipeline syntax: it is part of the dataset name the runner looks up.
+ 
+-The runner raises `ValueError: Pipeline input(s) {...} not found in the
+-DataCatalog` for any free input not in the catalog. Use `pipeline.inputs()` to
+-list them. Register parameters under their **literal** input name:
++**Intermediates are released after use.** The runner creates `MemoryDataset`s
++for intermediate outputs, then releases each one once its last consumer has
++run. So `catalog.load("X_train")` after the run raises `DatasetError: ... has
++not been saved yet`, even though `X_train` was written during the run. Only
++free inputs and pipeline outputs survive. To check
++an intermediate, end the pipeline there so it becomes an output:
+ 
+ ```python
+-# Correct
+-catalog["params:model_options"] = {"test_size": 0.2, ...}
+-
+-# WRONG: the node asks for "params:model_options", so this is a missing input
+-catalog["model_options"] = {"test_size": 0.2, ...}
++result = SequentialRunner().run(create_pipeline().to_outputs("X_train"), catalog)
++X_train = result["X_train"].load()
+ ```
+ 
+-Outputs and intermediates do not need registering. The runner creates
+-`MemoryDataset`s for them. It also **releases** intermediates once their last
+-consumer has run, so `catalog.load("X_train")` after the run raises
+-`DatasetError`. Only free inputs and pipeline outputs survive. To assert on an
+-intermediate, slice so that it becomes an output (next section).
+-
+-### Testing part of a pipeline
++### Running part of a pipeline
+ 
+-Slice the pipeline, then provide the free inputs of **the slice**:
++`only_nodes`, `from_nodes`, `to_nodes`, `from_inputs`, `to_outputs`,
++`only_nodes_with_tags` and `filter` return a new `Pipeline`. The catalog must
++satisfy the **slice's** `.inputs()`, not the full pipeline's:
+ 
+ ```python
+-pipeline = create_pipeline().from_nodes("train_model_node").to_nodes("evaluate_model_node")
+-# pipeline.inputs() == {"X_train", "y_train", "X_test", "y_test"}
+-
+-# Make an intermediate inspectable by ending the slice there
+-result = SequentialRunner().run(create_pipeline().to_outputs("X_train"), catalog)
+-X_train = result["X_train"].load()
++sliced = create_pipeline().from_nodes("train_model_node").to_nodes("evaluate_model_node")
++assert sliced.inputs() == {"X_train", "y_train", "X_test", "y_test"}
+ ```
+ 
+-Available: `only_nodes`, `from_nodes`, `to_nodes`, `from_inputs`, `to_outputs`,
+-`only_nodes_with_tags`, `filter`.
++`MemoryDataset` copies pandas DataFrames and numpy arrays on load and save, so
++a node that mutates its input cannot corrupt the fixture between tests. There
++is no need to add `.copy()` to nodes or fixtures for test isolation when data
++goes through the catalog. The exception is a unit test that calls the node
++function directly: there the node gets your object and can change it.
+ 
+-## Smoke-testing the whole project
++## 3. KedroSession smoke tests
+ 
+ ```python
+ from pathlib import Path
+@@ -157,81 +165,103 @@ from pathlib import Path
+ from kedro.framework.session import KedroSession
+ from kedro.framework.startup import bootstrap_project
+ 
+-PROJECT_PATH = Path(__file__).resolve().parents[1]  # project root, not cwd
++PROJECT_PATH = Path(__file__).resolve().parents[1]
+ 
+ 
+-def test_project_runs():
+-    bootstrap_project(PROJECT_PATH)  # required, before KedroSession.create
++def test_data_processing_runs():
++    bootstrap_project(PROJECT_PATH)
+     with KedroSession.create(project_path=PROJECT_PATH) as session:
+         session.run(pipeline_names=["data_processing"])
+ ```
+ 
+-- Without `bootstrap_project`, `create` fails with `ValueError: Package name not
+-  found`.
+-- This uses the real `conf/base/catalog.yml` and **writes real files** to
+-  `data/`. Keep these tests few, and point the catalog elsewhere through a test
+-  env if that matters.
+-- One session = one run. A second `session.run()` raises `KedroSessionError`.
+-- `pipeline_name=` is deprecated. Use `pipeline_names=[...]`.
++Why each line looks like this:
++
++- `bootstrap_project` reads `pyproject.toml` and registers the project's
++  package and settings. Without it, `KedroSession.create` fails with
++  `ValueError: Package name not found`.
++- Resolve the project root from `__file__`. The starter template uses
++  `Path.cwd()`, which only works when pytest runs from the project root.
++- Use `pipeline_names=[...]`. `pipeline_name=` is deprecated.
++- A session runs once. A second `session.run()` raises `KedroSessionError`, so
++  create a new session per run.
++- `session.run()` also returns `{name: dataset}`, same as the runner.
+ 
+ ### Test environments and runtime parameters
+ 
+ ```python
+ KedroSession.create(
+     project_path=PROJECT_PATH,
+-    env="test",                                          # conf/test/
+-    runtime_params={"model_options": {"test_size": 0.5}},  # nested dict
++    env="test",
++    runtime_params={"model_options": {"test_size": 0.5}},
+ )
+ ```
+ 
+-- `runtime_params` must be **nested**. A dotted key like
+-  `{"model_options.test_size": 0.5}` is not expanded. It becomes a literal key and
+-  the real value is unchanged. (Only the CLI `--params` parses dots.)
+-- A misspelled `env` is accepted by `create()` but does **not** fall back to
+-  base: `load_context().params` is `{}` (only a warning) and `session.run()`
++Three traps:
++
++- **`runtime_params` must be nested.** Through the Python API, a dotted key
++  like `{"model_options.test_size": 0.5}` is stored as a literal key and the real
++  value is unchanged. Only the CLI's `--params` splits on dots.
++- **A passing run does not prove the env was applied.** A parameters file in
++  the wrong folder, or a mistyped key, leaves the base values in place and the
++  run still succeeds. That is how a test that is meant to check test config
++  ends up quietly checking production config. So any test that sets `env=` or
++  `runtime_params` should assert the value it expects before running, even
++  when the request says the run alone is enough:
++
++  ```python
++  with KedroSession.create(project_path=PROJECT_PATH, env="test") as session:
++      assert session.load_context().params["model_options"]["test_size"] == 0.5
++      session.run(pipeline_names=["data_science"])
++  ```
++
++  A misspelled env name is louder than it looks: `create()` accepts it, but
++  the parameters come back empty (with only a warning) and `session.run()`
+   raises `MissingConfigException`.
+-- A passing run does not prove the test values were used (a file in the wrong
+-  folder or a mistyped key leaves base values). Assert them in every test that
+-  sets `env=` or `runtime_params`, even if the request says the run is enough:
++- **An env's parameters file replaces whole top-level keys.** It does not
++  merge into `base`. If `conf/test/parameters_data_science.yml` sets only
++  `model_options.test_size`, `random_state` and `features` are gone and
++  `split_data` fails with `KeyError: 'features'`. Write the whole key:
+ 
+-```python
+-with KedroSession.create(project_path=PROJECT_PATH, env="test") as session:
+-    assert session.load_context().params["model_options"]["test_size"] == 0.5
+-    session.run(pipeline_names=["data_science"])
+-```
++  ```yaml
++  # conf/test/parameters_data_science.yml
++  model_options:
++    test_size: 0.5
++    random_state: 3
++    features: [engines, passenger_capacity, crew]
++  ```
+ 
+-- A parameters file in the test env **replaces** whole top-level keys from
+-  `base`. Repeat every sibling key you still need:
++## Imports and APIs that do not exist in Kedro 1.x
+ 
+-```yaml
+-# conf/test/parameters_data_science.yml
+-# WRONG: random_state and features from base are gone, split_data fails
+-model_options:
+-  test_size: 0.5
+-```
++Models trained on older Kedro code tend to produce these:
+ 
+-```yaml
+-# Correct: the whole key
+-model_options:
+-  test_size: 0.5
+-  random_state: 3
+-  features: [engines, passenger_capacity, crew]
+-```
++| Don't write | Write |
++|---|---|
++| `context.run()` / `KedroContext.run` | `KedroSession.create(...).run()` |
++| `from kedro.framework.context import load_context` | `bootstrap_project` + `KedroSession.create` |
++| `from kedro.runner import KedroSession`, `from kedro.io import KedroSession` | `from kedro.framework.session import KedroSession` |
++| `from kedro.io import KedroDataCatalog` | `from kedro.io import DataCatalog` |
++| `def test_x(kedro_session, catalog):` with no fixture defined | Define the fixtures in `conftest.py` |
+ 
+-## Wrong APIs: do not generate these
++## Project layout
+ 
+-```python
+-# WRONG: none of these exist in Kedro 1.x
+-context.run()                                      # KedroContext has no run()
+-from kedro.framework.context import load_context
+-from kedro.runner import KedroSession              # it's kedro.framework.session
+-from kedro.io import KedroDataCatalog              # it's kedro.io.DataCatalog
+-def test_x(kedro_session, catalog): ...            # no built-in fixtures
+-```
++`tests/` sits at the project root and mirrors `src/<package>/`, with files
++named `test_<module>.py`:
+ 
+-## Fixtures and layout
++```
++tests/
++├── conftest.py
++├── pipelines/
++│   └── data_science/
++│       ├── test_nodes.py
++│       └── test_pipeline.py
++└── test_run.py
++```
+ 
+-Write fixtures yourself, in `conftest.py` to share them:
++Fixtures that more than one test module needs go in a `conftest.py`. pytest
++loads it automatically for every test below its folder, so the examples above
++can ask for `model_input_table` and `model_options` without importing them.
++Defining the same fixture in each module instead works until the copies drift
++apart.
+ 
+ ```python
+ # tests/conftest.py
+@@ -241,26 +271,25 @@ import pytest
+ 
+ @pytest.fixture
+ def model_input_table():
+-    return pd.DataFrame({"engines": [1, 2, 3, 4, 5], "crew": [4, 5, 6, 7, 8],
+-                         "passenger_capacity": [5, 6, 7, 8, 9],
+-                         "price": [120, 290, 30, 40, 50]})
++    return pd.DataFrame(
++        {
++            "engines": [1, 2, 3, 4, 5],
++            "crew": [4, 5, 6, 7, 8],
++            "passenger_capacity": [5, 6, 7, 8, 9],
++            "price": [120, 290, 30, 40, 50],
++        }
++    )
+ 
+ 
+ @pytest.fixture
+ def model_options():
+-    return {"test_size": 0.2, "random_state": 3,
+-            "features": ["engines", "passenger_capacity", "crew"]}
+-```
+-
+-`tests/` sits at the project root and mirrors `src/<package>/`:
+-
+-```
+-src/<package>/pipelines/data_science/nodes.py
+-tests/pipelines/data_science/test_nodes.py
+-tests/pipelines/data_science/test_pipeline.py
+-tests/test_run.py
++    return {
++        "test_size": 0.2,
++        "random_state": 3,
++        "features": ["engines", "passenger_capacity", "crew"],
++    }
+ ```
+ 
+-Install the project (`pip install -e .`) so tests can import it, and run
+-`pytest` from the project root. Coverage comes from `pytest-cov` through
+-`[tool.pytest.ini_options] addopts = "--cov src/<package>"` in `pyproject.toml`.
++The project has to be installed (`pip install -e .`) for tests to import it.
++For coverage, `pytest-cov` with `addopts = "--cov src/<package>"` under
++`[tool.pytest.ini_options]` in `pyproject.toml`.

@@ -346,8 +346,8 @@ These came out of the experiment, not out of the comparison itself.
    corrected, and the round 2 test built on the claim was replaced.
 4. **The A/B test confirmed the facts that matter most.** The no-skill runs failed on
    `.load()`, dotted `runtime_params` and `load_context`, all non-obvious entries in the
-   fact sheet. They did *not* fail on node unit tests, which supports the roadmap's worry
-   that part of this skill overlaps with generic pytest knowledge.
+   fact sheet. They did *not* fail on node unit tests, which supports the concern we had
+   before writing: that part of this skill overlaps with generic pytest knowledge.
 5. **Two tasks did not discriminate.** `unit-test-preprocess-nodes` and
    `ds-pipeline-metrics` passed in every arm. For the second, the spaceflights starter
    ships a pipeline test the agent can copy. A future eval suite should drop or harden them.
@@ -394,7 +394,8 @@ These came out of the experiment, not out of the comparison itself.
 ```
 facts.md                          shared, verified fact sheet
 skill-diff.md                     side-by-side record of how the two SKILL.md files differ
-skills.diff                       raw unified diff of the two SKILL.md files
+skills.diff                       unified diff of the two iteration 1 (v1) SKILL.md files
+skills-final.diff                 unified diff of the two final (iteration 4) SKILL.md files
 v1/                               iteration 1 SKILL.md files, as evaluated in rounds 1 and 2
 verification/
   test_facts.py                   evidence for facts.md (20 tests)

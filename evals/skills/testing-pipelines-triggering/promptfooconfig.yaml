@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+description: testing-pipelines trigger check (does the description make the picker name the skill?)
+
+# Shows the model the installed skills and their descriptions, then asks which one it
+# would load. Deterministic: no judge model. Build descriptions.json first:
+#   python3 evals/skills/testing-pipelines-triggering/build_descriptions.py
+# Run with: make eval-config CONFIG=evals/skills/testing-pipelines-triggering/promptfooconfig.yaml
+prompts:
+  - id: file://prompts.js:raw
+    label: with-skill:raw
+  - id: file://prompts.js:skillCreator
+    label: with-skill:skill-creator
+  # Iteration 1 descriptions. Not labelled with-skill, so gate.js reports their failures
+  # without failing the run.
+  - id: file://prompts.js:rawV1
+    label: v1:raw
+  - id: file://prompts.js:skillCreatorV1
+    label: v1:skill-creator
+
+providers:
+  - id: openai:chat:gpt-4o
+    config: { temperature: 0, max_tokens: 200 }
+  - id: moonshot:kimi-k2.7-code
+    config: { max_tokens: 16000, showThinking: false }
+
+defaultTest:
+  assert:
+    - type: javascript
+      value: file://assertions.js:triggers
+
+tests: file://tests.yaml
