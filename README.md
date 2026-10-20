@@ -22,8 +22,10 @@ kedro skills list
 kedro skills install catalog-config
 ```
 
-This writes managed files into your project. They should be committed to git so
+This writes managed files into your Kedro project. They should be committed to git so
 the whole team benefits.
+
+Outside a Kedro project, the commands use the current directory instead.
 
 ## Available skills
 

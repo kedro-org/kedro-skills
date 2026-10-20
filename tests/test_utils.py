@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import click
-import pytest
-
 if TYPE_CHECKING:
     from pathlib import Path
+
+    import pytest
 
 from kedro_skills.utils import find_project_root
 
@@ -18,9 +17,14 @@ class TestFindProjectRoot:
         monkeypatch.chdir(kedro_project)
         assert find_project_root() == kedro_project
 
-    def test_raises_outside_project(
-        self, non_kedro_dir: Path, monkeypatch: pytest.MonkeyPatch
+    def test_falls_back_to_cwd_outside_project(
+        self,
+        non_kedro_dir: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
     ) -> None:
         monkeypatch.chdir(non_kedro_dir)
-        with pytest.raises(click.UsageError, match="Not inside a Kedro project"):
-            find_project_root()
+        assert find_project_root() == non_kedro_dir
+        err = capsys.readouterr().err
+        assert "Not inside a Kedro project" in err
+        assert str(non_kedro_dir) in err

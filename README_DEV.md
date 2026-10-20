@@ -88,7 +88,7 @@ with an existing one.
 3. **Test locally:**
    ```bash
    pip install -e .
-   kedro skills install my-skill   # run inside a Kedro project
+   kedro skills install my-skill   # run inside a Kedro project or any directory
    ```
 
 4. **Verify output** — check that the canonical file, AGENTS.md block, and
