@@ -317,10 +317,10 @@ class TestParametersAndConfigSkill:
 
 
 @pytest.mark.parametrize(
-    "skill_id", ["testing-pipelines-raw", "testing-pipelines-skill-creator"]
+    "skill_id", ["kedro-testing-pipelines"]
 )
 class TestTestingPipelinesSkills:
-    """Install/uninstall lifecycle for both testing-pipelines variants."""
+    """Install/uninstall lifecycle for the testing skill."""
 
     def test_install_creates_all_files(
         self, skill_id: str, kedro_project: Path, monkeypatch: pytest.MonkeyPatch

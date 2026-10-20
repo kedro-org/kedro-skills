@@ -45,9 +45,7 @@ skills/
 │   └── SKILL.md
 ├── parameters-and-config/
 │   └── SKILL.md
-├── testing-pipelines-raw/
-│   └── SKILL.md
-└── testing-pipelines-skill-creator/
+└── kedro-testing-pipelines/
     └── SKILL.md
 
 registry.yaml           # Skill metadata: id, category, paths, ide_support

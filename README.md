@@ -32,10 +32,9 @@ the whole team benefits.
 | `catalog-config` | `conf/**/*.yml`, `conf/**/*.yaml` | Data catalog entries: dataset types, factories, credentials, interpolation |
 | `llm-context-nodes` | `src/**/pipelines/**/*.py` | The `llm_context_node` API for composing LLMs, prompts and tools |
 | `parameters-and-config` | `conf/**/parameters*.yml` and `conf/**/credentials*.yml` | Parameters, credentials, configuration interpolation and runtime overrides. |
-| `testing-pipelines-raw` | `tests/**/*.py` | Node unit tests, in-memory pipeline tests and `KedroSession` smoke tests |
-| `testing-pipelines-skill-creator` | `tests/**/*.py` | Same scope as `testing-pipelines-raw`, written with the skill-creator skill |
+| `kedro-testing-pipelines` | `tests/**/*.py` | Node unit tests, in-memory pipeline tests and `KedroSession` smoke tests |
 
-`testing-pipelines-raw` and `testing-pipelines-skill-creator` are two experimental variants of the same skill, kept side by side to compare ways of authoring skills. Install one, not both. See [docs/skill-creation-comparison](docs/skill-creation-comparison/README.md).
+The skill was compared with a skill-creator-written variant. See [docs/skill-creation-comparison](docs/skill-creation-comparison/README.md).
 
 ## What it writes
 
