@@ -6,17 +6,19 @@ import click
 
 
 def find_project_root() -> Path:
-    """Return the Kedro project root for the current working directory.
+    """Return the directory skills should be installed into.
 
-    Wraps ``kedro.utils.find_kedro_project`` and raises a friendly
-    ``click.UsageError`` when invoked outside a Kedro project.
+    This is the Kedro project root, or the current directory if there
+    isn't one.
     """
     from kedro.utils import find_kedro_project  # noqa: PLC0415
 
-    project_path: Path | None = find_kedro_project(Path.cwd())
+    cwd = Path.cwd()
+    project_path: Path | None = find_kedro_project(cwd)
     if project_path is None:
-        raise click.UsageError(
-            "Not inside a Kedro project. "
-            "Please change to a Kedro project directory and try again."
+        click.echo(
+            f"Not inside a Kedro project; using the current directory ({cwd}).",
+            err=True,
         )
+        return cwd
     return project_path

@@ -118,7 +118,7 @@ def install_cmd(
     ides: str | None,
     force: bool,
 ) -> None:
-    """Install a skill into the current Kedro project."""
+    """Install a skill into the current Kedro project or directory."""
     project_root = find_project_root()
     parsed_ides = _parse_ides(ides)
 

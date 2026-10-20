@@ -39,8 +39,10 @@ class TestSkillsList:
     ) -> None:
         monkeypatch.chdir(non_kedro_dir)
         result = CliRunner().invoke(skills, ["list"])
-        assert result.exit_code != 0
+        assert result.exit_code == 0
         assert "Not inside a Kedro project" in result.output
+        assert str(non_kedro_dir) in result.output
+        assert "catalog-config" in result.output
 
 
 class TestInstallOutput:
