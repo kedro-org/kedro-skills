@@ -2,6 +2,7 @@
 ## Major features and improvements
 - Added the `llm-context-nodes` skill: guidance for the `llm_context_node` API, activated on `src/**/pipelines/**/*.py`.
 - Added `parameters-and-config` skill, offering guidance for writing Kedro parameter and credential files.
+- Added the `kedro-testing-pipelines` skill: guidance for Kedro 1.x testing (node unit tests, in-memory pipeline tests and `KedroSession` smoke tests), activated on `tests/**/*.py`.
 - `kedro skills` commands now work outside a Kedro project, installing into the current directory.
 
 # Release 0.2.0
