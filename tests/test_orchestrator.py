@@ -13,26 +13,33 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
+@pytest.fixture(params=["kedro_project", "non_kedro_dir"])
+def install_dir(request: pytest.FixtureRequest) -> Path:
+    """Run the test both inside a Kedro project and in a plain directory."""
+    path: Path = request.getfixturevalue(request.param)
+    return path
+
+
 class TestInstallLifecycle:
     """Full install → list → idempotent → update → uninstall cycle."""
 
     def test_install_creates_all_files(
-        self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
+        self, install_dir: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.chdir(kedro_project)
+        monkeypatch.chdir(install_dir)
         runner = CliRunner()
         result = runner.invoke(skills, ["install", "catalog-config"], input="all\n")
         assert result.exit_code == 0, result.output
         assert "Installed" in result.output or "install" in result.output.lower()
 
-        assert (kedro_project / ".agents/skills/catalog-config/SKILL.md").is_file()
-        assert (kedro_project / "AGENTS.md").is_file()
-        assert (kedro_project / ".cursor/rules/catalog-config.mdc").is_file()
+        assert (install_dir / ".agents/skills/catalog-config/SKILL.md").is_file()
+        assert (install_dir / "AGENTS.md").is_file()
+        assert (install_dir / ".cursor/rules/catalog-config.mdc").is_file()
         assert (
-            kedro_project / ".github/instructions/catalog-config.instructions.md"
+            install_dir / ".github/instructions/catalog-config.instructions.md"
         ).is_file()
-        assert (kedro_project / ".claude/skills/catalog-config/SKILL.md").is_file()
-        assert (kedro_project / ".agents/skills/.installed.json").is_file()
+        assert (install_dir / ".claude/skills/catalog-config/SKILL.md").is_file()
+        assert (install_dir / ".agents/skills/.installed.json").is_file()
 
     def test_list_shows_installed(
         self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
@@ -108,22 +115,22 @@ class TestInstallLifecycle:
         assert "--force" not in result.output
 
     def test_uninstall_removes_all_managed_files(
-        self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
+        self, install_dir: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.chdir(kedro_project)
+        monkeypatch.chdir(install_dir)
         runner = CliRunner()
         runner.invoke(skills, ["install", "catalog-config"], input="all\n")
         result = runner.invoke(skills, ["uninstall", "catalog-config"])
         assert result.exit_code == 0
 
-        assert not (kedro_project / ".agents/skills/catalog-config/SKILL.md").is_file()
-        assert not (kedro_project / "AGENTS.md").is_file()
-        assert not (kedro_project / ".cursor/rules/catalog-config.mdc").is_file()
+        assert not (install_dir / ".agents/skills/catalog-config/SKILL.md").is_file()
+        assert not (install_dir / "AGENTS.md").is_file()
+        assert not (install_dir / ".cursor/rules/catalog-config.mdc").is_file()
         assert not (
-            kedro_project / ".github/instructions/catalog-config.instructions.md"
+            install_dir / ".github/instructions/catalog-config.instructions.md"
         ).is_file()
-        assert not (kedro_project / ".claude/skills/catalog-config/SKILL.md").is_file()
-        assert not (kedro_project / ".agents/skills/.installed.json").is_file()
+        assert not (install_dir / ".claude/skills/catalog-config/SKILL.md").is_file()
+        assert not (install_dir / ".agents/skills/.installed.json").is_file()
 
     def test_list_shows_not_installed_after_uninstall(
         self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
@@ -150,17 +157,17 @@ class TestInstallLifecycle:
         for skill in load_registry():
             assert (kedro_project / ".agents/skills" / skill.id / "SKILL.md").is_file()
 
-
-class TestErrorHandling:
     def test_install_outside_kedro_project(
         self, non_kedro_dir: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.chdir(non_kedro_dir)
         runner = CliRunner()
-        result = runner.invoke(skills, ["install", "catalog-config"])
-        assert result.exit_code != 0
+        result = runner.invoke(skills, ["install", "catalog-config"], input="all\n")
+        assert result.exit_code == 0, result.output
         assert "Not inside a Kedro project" in result.output
 
+
+class TestErrorHandling:
     def test_uninstall_not_installed(
         self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
