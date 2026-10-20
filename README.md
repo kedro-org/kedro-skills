@@ -34,7 +34,7 @@ Outside a Kedro project, the commands use the current directory instead.
 | `catalog-config` | `conf/**/*.yml`, `conf/**/*.yaml` | Data catalog entries: dataset types, factories, credentials, interpolation |
 | `llm-context-nodes` | `src/**/pipelines/**/*.py` | The `llm_context_node` API for composing LLMs, prompts and tools |
 | `parameters-and-configs` | `conf/**/parameters*.yml` and `conf/**/credentials*.yml` | Parameters, credentials, configuration interpolation and runtime overrides. |
-| `build-demo` | `pyproject.toml` | A new, small end-to-end Kedro demo for a use case: a working project, a Kedro-Viz walkthrough and optional audience material |
+| `build-demo` | `pyproject.toml` | A new, small end-to-end Kedro demo with a working result, an offline HTML walkthrough and Kedro-Viz guidance; other audience material only on request |
 
 ## What it writes
 

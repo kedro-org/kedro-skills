@@ -3,7 +3,7 @@
 - Added the `llm-context-nodes` skill: guidance for the `llm_context_node` API, activated on `src/**/pipelines/**/*.py`.
 - Added `parameters-and-config` skill, offering guidance for writing Kedro parameter and credential files.
 - `kedro skills` commands now work outside a Kedro project, installing into the current directory.
-- Added the `build-demo` skill: guidance for building a small, end-to-end Kedro demo for a use case, with a verified result, a Kedro-Viz walkthrough and optional audience material.
+- Added the `build-demo` skill: guidance for building a small, end-to-end Kedro demo with a verified result, a self-contained HTML walkthrough and Kedro-Viz guidance; other audience material only on request.
 
 # Release 0.2.0
 ## Major features and improvements
