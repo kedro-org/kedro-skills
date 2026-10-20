@@ -44,6 +44,7 @@ eval-check-node:
 
 eval-test: eval-check-node
 	node --test evals/lib/*.test.js evals/skills/*/*.test.js
+	pytest -q -p no:cacheprovider evals/fixture/test_context.py
 
 eval: eval-check-node eval-test
 	@mkdir -p $(EVAL_RESULTS); status=0; for config in evals/skills/*/promptfooconfig.yaml; do \

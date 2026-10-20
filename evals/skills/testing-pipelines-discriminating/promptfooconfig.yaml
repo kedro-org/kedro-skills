@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+description: testing-pipelines discrimination tasks (one fact per task, deterministic checks only)
+
+# Runs the two current variants and the no-skill baseline on tasks that each target a fact
+# only one variant states in depth. Deterministic checks, so no judge model is needed.
+# Run with: make eval-config CONFIG=evals/skills/testing-pipelines-discriminating/promptfooconfig.yaml
+prompts:
+  - id: file://../testing-pipelines-shared/prompts.js:raw
+    label: with-skill:raw
+  - id: file://../testing-pipelines-shared/prompts.js:skillCreator
+    label: with-skill:skill-creator
+  - id: file://../../prompts/baseline.json
+    label: baseline
+
+providers:
+  - id: openai:chat:gpt-4o
+    config: { temperature: 0, max_tokens: 4096 }
+  - id: moonshot:kimi-k2.7-code
+    config: { max_tokens: 16000, showThinking: false }
+
+defaultTest:
+  vars:
+    skill_raw: file://../../../skills/testing-pipelines-raw/SKILL.md
+    skill_creator: file://../../../skills/testing-pipelines-skill-creator/SKILL.md
+    project_context: file://../../fixture/context.py
+
+tests: file://tests.yaml

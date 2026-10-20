@@ -1,3 +1,5 @@
 {
-    "kedro.kedroProjectPath": "/home/lrcouto/kedro-skills/evals/fixture/project"
+    "kedro.kedroProjectPath": "/home/lrcouto/kedro-skills/evals/fixture/project",
+    "python-envs.defaultEnvManager": "ms-python.python:conda",
+    "python-envs.defaultPackageManager": "ms-python.python:conda"
 }

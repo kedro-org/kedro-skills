@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+description: explain-project skill
+
+# This skill answers in prose and starts with commands, so its prompts are JS
+# functions (prompts.js) that pick a system text from each test's `mode` var
+# instead of the shared code-change prompts. The labels stay with-skill and
+# baseline, so evals/lib/gate.js gates this suite like the others.
+prompts:
+  - id: file://prompts.js:withSkill
+    label: with-skill
+  - id: file://prompts.js:baseline
+    label: baseline
+
+providers:
+  - id: openai:chat:gpt-4o
+    config: { temperature: 0, max_tokens: 4096 }
+  # Reasoning model: showThinking must be false or the reasoning is prefixed
+  # to the output that gets graded.
+  - id: moonshot:kimi-k2.7-code
+    config: { max_tokens: 16000, showThinking: false }
+
+defaultTest:
+  options:
+    # Judge for llm-rubric assertions, from a different model family than
+    # most providers under test.
+    provider: openai:chat:gpt-4o-mini
+  vars:
+    skill_content: file://../../../skills/explain-project/SKILL.md
+    project_context: file://../../fixture/context.py
+
+tests: file://tests.yaml
