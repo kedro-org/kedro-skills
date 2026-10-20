@@ -217,12 +217,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Local stuff
-.obsidian-vault
-CLAUDE.md
-AGENTS.md
-_test_projects/
-
 # Eval helpers (the Python template above ignores every lib/ directory)
 !evals/lib/
 
