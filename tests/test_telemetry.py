@@ -184,5 +184,12 @@ class TestTrackUninstall:
         telemetry.track_uninstall(_result("uninstall"), tmp_path)
 
         assert sent_events == [
-            ("kedro_skills_uninstall", {"skill_id": "catalog-config"})
+            (
+                "kedro_skills_uninstall",
+                {
+                    "skill_id": "catalog-config",
+                    "success": True,
+                    "drift_detected": False,
+                },
+            )
         ]
