@@ -316,9 +316,7 @@ class TestParametersAndConfigSkill:
         assert "parameters-and-config" not in agents_md
 
 
-@pytest.mark.parametrize(
-    "skill_id", ["kedro-testing-pipelines"]
-)
+@pytest.mark.parametrize("skill_id", ["kedro-testing-pipelines"])
 class TestTestingPipelinesSkills:
     """Install/uninstall lifecycle for the testing skill."""
 
