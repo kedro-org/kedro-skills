@@ -46,3 +46,18 @@ skills:
       - copilot
       - claude
       - codex
+
+  - id: kedro-testing-pipelines
+    category: testing
+    description: >-
+      Kedro testing guidance for tests/**/*.py in a Kedro project. Use when writing
+      unit tests for node functions, pipeline tests with DataCatalog, MemoryDataset
+      and SequentialRunner, or KedroSession smoke tests. Adds nothing for tests
+      that do not touch Kedro.
+    paths:
+      - "tests/**/*.py"
+    ide_support:
+      - cursor
+      - copilot
+      - claude
+      - codex
