@@ -1,0 +1,10 @@
+[
+  {
+    "role": "system",
+    "content": {{ ("You are an AI coding assistant working in a Kedro project. In this conversation you cannot run commands, read files beyond those shown, or fetch URLs. Answer with the exact changes you would make: put each file's new or changed content in a fenced code block, preceded by a line of the form `File: <path>`.\n\nFollow this skill guidance:\n\n" + skill_content) | dump }}
+  },
+  {
+    "role": "user",
+    "content": {{ ("Project files:\n\n" + project_context + "\n\nTask: " + task) | dump }}
+  }
+]
