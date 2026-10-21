@@ -20,7 +20,7 @@ Every demo you build or prepare includes a self-contained `DEMO.html` walkthroug
 **CRITICAL:**
 - Say plainly where Kedro helps and where it does not.
 - A demo "works" only for the exact command you ran and whose result you inspected. If something blocked the run, hand it over as prepared but unverified.
-- Keep real secret values out of code, docs, outputs and shareable configuration. Reference them by name; ignored local credential files are fine. Never open, print or grep a credential file such as `conf/local/credentials.yml` or `.env` (step 4).
+- Keep real secret values out of code, docs, outputs and shareable configuration. Reference them by name; ignored local credential files are fine. Never open, print or grep a credential file such as `conf/local/credentials.yml` or `.env` (step 4), and exclude them from bulk reads and searches. Never print environment variable values or the whole environment; check only whether a required key is set.
 - Before writing any file, show a short plan, even if you continue straight away.
 - Always create `DEMO.html` for a demo you build or prepare, and link it from `README.md`.
 - Label every simulated component wherever it appears.
@@ -119,7 +119,8 @@ Install them once the user agrees.
 - **Credentials:** reference them by name, and tell the user which keys to fill in.
   - Name the credential keys your catalog references, for example `credentials: openai`, and ask the user to confirm they exist.
   - `conf/local/credentials.yml` (gitignored) is read only in the default run environment.
-  - With `--env <name>`, use environment variables or that environment's credentials file.
+  - With `--env <name>` other than `local`, `conf/local` is not read. A named reference such as `credentials: openai` needs an `openai` mapping in `conf/<name>/credentials.yml` (gitignored). Its fields can reference environment variables, for example `api_key: ${oc.env:OPENAI_API_KEY}`. Exporting the variable alone does not create that mapping.
+  - Alternatively, omit `credentials:` only if the dataset supports reading its provider's environment variable directly, such as `OPENAI_API_KEY`.
 - **Sample data:** the template's `.gitignore` excludes everything under `data/`. To ship an approved synthetic sample, add a `!data/01_raw/<file>` line, or include the command that regenerates it. Keep private inputs and outputs ignored, and leave committing to the user.
 
 Where they help the story, make the graph easier to read in Kedro-Viz:
@@ -166,7 +167,7 @@ Where they help the story, make the graph easier to read in Kedro-Viz:
 
 From the project folder, using the project's interpreter:
 
-1. Run `kedro registry list` and check that every planned pipeline is listed. The template's `find_pipelines(raise_errors=True)` fails loudly on import errors.
+1. Run `kedro registry list` and check that every planned pipeline is listed. The template's `find_pipelines(raise_errors=True)` (Kedro 1.2+) fails loudly on import errors; earlier templates only warn and leave the pipeline out.
 2. Run the exact command for the chosen mode, including any `--env` or `--params`. Open the saved result and check that it answers the user's question: not empty, and with plausible values.
 3. If `DEMO.html` shows a `--params` override, run it and confirm that the result changes. If it doesn't, remove it from `DEMO.html` or choose one that does.
 4. Optionally run `kedro viz build` as a finite check that the graph loads.
@@ -175,7 +176,7 @@ From the project folder, using the project's interpreter:
    - It can print `ERROR: Failed to build/deploy Kedro-Viz` and still exit 0. Look for its success line and for `build/api/main`.
    - If the demo's mode needs other options, say that Viz was checked with the defaults only.
    - Start `kedro viz run`, which is a server, only when the user asks, and stop it afterwards.
-5. Check that code, docs, outputs and shareable configuration contain no secret values, without printing any. In a git repository, confirm with `git check-ignore` that credential files are ignored.
+5. Check that code, docs, outputs and shareable configuration contain no secret values, without printing any. Exclude credential and `.env` files from bulk checks. In a git repository, confirm with `git check-ignore` that credential files are ignored.
 6. Add tests only for logic worth protecting.
 
 Fix failures within scope. If a prerequisite is missing (a key, a package that will not install, no network), stop and say what is missing and what was verified, instead of retrying live services. Note the command you ran, its mode and what you saw. `DEMO.html` and the handover use these notes.

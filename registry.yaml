@@ -55,8 +55,7 @@ skills:
       Use when someone asks for a Kedro demo or proof of concept, or
       wants to see whether and how Kedro would work for their problem. Not for
       changing or explaining an existing project.
-    paths:
-      - "pyproject.toml"
+    paths: []
     ide_support:
       - cursor
       - copilot
