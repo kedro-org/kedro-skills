@@ -62,8 +62,8 @@ Pass `env='<name>'`, `conf_source='<path>'` (Kedro 1.5.0+) or `runtime_params={.
 
 - `metadata`: project and package names, and `kedro_version`, which is `kedro_init_version`, not the installed version.
 - `pipelines`: every registered pipeline with its free `inputs` and final `outputs`, and its nodes in a valid run order, each with `name`, `func_name`, `namespace`, `tags`, `inputs`, `outputs` and `source`.
-- `datasets`: catalog entries, plus pipeline datasets resolved through factory patterns, with `type` and `filepath` only. Read the catalog files for patterns, layers, versioning, `load_args` and `credentials` keys.
-- `parameters`: top-level parameter keys, without values or the file that sets them. Find the file with `grep -rn '^<key>:'` in the configuration folder, skipping credentials files, before naming it.
+- `datasets`: catalog entries, plus pipeline datasets resolved through factory patterns, with `type` and `filepath` only. Broad patterns such as `"{default}"` or `"{namespace}.{name}"` can also match `params:...` and `parameters`: these are parameter inputs, not saved datasets, so exclude them from storage claims. Read the catalog files for patterns, layers, versioning, `load_args` and `credentials` keys.
+- `parameters`: top-level parameter keys, without values or the file that sets them. Find the file with `rg -n -g '*.yml' -g '*.yaml' -g '!**/*credentials*' -g '!**/*credentials*/**' -g '!**/.env*' '^<key>:' <configuration-folder>` before naming it. Keep these exclusions when adapting the search.
 
 It does not show what hooks change during a run or prove that the pipelines run. For the API itself, see `https://docs.kedro.org/en/{version}/inspect/inspect-project/` with the installed version or `stable`.
 
@@ -105,7 +105,7 @@ The snapshot leaves names with no catalog entry or matching factory out of `data
 
 ### 5. Namespaces rename nodes, datasets and parameters
 
-`Pipeline(..., namespace="candidate")` prefixes node names, datasets and parameters (`candidate.regressor`, `params:candidate.model_options`), except names mapped through `inputs=`, `outputs=` or `parameters=`, and except datasets and parameters when `prefix_datasets_with_namespace=False`. A catalog entry for `regressor` does not cover `candidate.regressor`: unless a factory pattern matches the prefixed name, the reused pipeline's model stays in memory. The `namespace=` argument on a single `Node` only labels the node; it does not rename its datasets. Explain a reused pipeline once, then for each instance give its node names and how function arguments and returned keys map to its datasets and parameters.
+`Pipeline(..., namespace="candidate")` prefixes node names, datasets and parameters (`candidate.regressor`, `params:candidate.model_options`), except names mapped through `inputs=`, `outputs=` or `parameters=`, and except datasets and parameters when `prefix_datasets_with_namespace=False`. A catalog entry for `regressor` does not cover `candidate.regressor`: unless a factory pattern matches the prefixed name, the reused pipeline's model stays in memory. The `namespace=` argument on a single `Node` only prefixes that node's name (`candidate.train_model`); it does not rename its datasets or parameters. Explain a reused pipeline once, then for each instance give its node names and how function arguments and returned keys map to its datasets and parameters.
 
 ### 6. Never expose secrets
 
