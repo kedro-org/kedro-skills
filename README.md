@@ -34,7 +34,7 @@ Outside a Kedro project, the commands use the current directory instead.
 | `catalog-config` | `conf/**/*.yml`, `conf/**/*.yaml` | Data catalog entries: dataset types, factories, credentials, interpolation |
 | `llm-context-nodes` | `src/**/pipelines/**/*.py` | The `llm_context_node` API for composing LLMs, prompts and tools |
 | `parameters-and-configs` | `conf/**/parameters*.yml` and `conf/**/credentials*.yml` | Parameters, credentials, configuration interpolation and runtime overrides. |
-| `build-demo` | Requests for a new demo or proof of concept | A new, small end-to-end Kedro demo with a working result, an offline HTML walkthrough and Kedro-Viz guidance; other audience material only on request |
+| `kedro-build-demo` | Requests for a new demo or proof of concept | A new, small end-to-end Kedro demo with a working result, an offline HTML walkthrough and Kedro-Viz guidance; other audience material only on request |
 
 ## What it writes
 
@@ -50,9 +50,14 @@ my-kedro-project/
 `AGENTS.md` is the content-discovery channel — one file reaches Cursor, Copilot,
 and Codex CLI. `.cursor/rules/` and
 `.github/instructions/` add glob-scoped activation for skills with file patterns.
-Skills with `paths: []`, such as `build-demo`, use their descriptions instead:
+Skills with `paths: []`, such as `kedro-build-demo`, use their descriptions instead:
 their wrappers omit file patterns, and their AGENTS.md blocks apply only to
 matching requests. They can be installed in an empty folder before a project exists.
+
+If you installed the earlier PR preview as `build-demo`, run
+`kedro skills uninstall build-demo` with that preview still installed, before
+upgrading the package. Then install `kedro-build-demo`. The preview name is not
+an alias for the new name.
 
 ## CLI reference
 

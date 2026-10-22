@@ -1,5 +1,5 @@
 ---
-name: build-demo
+name: kedro-build-demo
 description: >-
   Builds a new, small, end-to-end Kedro demo for someone's use case, with a
   working project, a self-contained HTML walkthrough and Kedro-Viz guidance.
@@ -97,6 +97,8 @@ kedro new --name "<Demo name>" --tools data --example n
 
 This creates a `<demo-name>` folder in the current directory, with `data/01_raw` to `data/08_reporting`. Add `test` to `--tools` if you will write tests. Pass `--telemetry` only when the user has stated a preference. In a fresh blank project the user already created, skip this step and inspect its files.
 
+Respect the user's telemetry choice. For offline runs or a requested opt-out, prefix each Kedro command with `KEDRO_DISABLE_TELEMETRY=1`, including `kedro new`, for example `KEDRO_DISABLE_TELEMETRY=1 kedro run`. Explain this optional setting in the walkthrough when used. `kedro new --telemetry=no` only sets the new project's preference; it does not disable telemetry for the creation command itself. Do not change global environment settings or an existing `.telemetry` file unless asked.
+
 Add each pipeline with `kedro pipeline create <name>`. This creates the pipeline package, `conf/base/parameters_<name>.yml` and a test folder. `find_pipelines()` in the template registers it, and `__default__` runs them all.
 
 The template's `requirements.txt` lists only Kedro and Jupyter. Add:
@@ -184,6 +186,8 @@ Fix failures within scope. If a prerequisite is missing (a key, a package that w
 ## 6. Create the HTML walkthrough
 
 Always write `DEMO.html` in the project root, and add a short setup/run section and a link to it in `README.md`. The HTML page is the main walkthrough; do not duplicate it in Markdown unless requested.
+
+Near the title, show `Project location: <actual absolute project root>`, labelled as the location on this machine. Start the setup instructions with a correctly quoted `cd` command for that folder, and note that another machine needs its own checkout path.
 
 Make one self-contained file with embedded styles and assets, readable in a browser directly from disk. Use an inline SVG or HTML/CSS diagram of the real pipeline stages; do not fetch logos or images from the web. No server, build step, external fonts, CDN scripts or extra packages are needed to view it.
 

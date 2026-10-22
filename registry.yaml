@@ -47,7 +47,7 @@ skills:
       - claude
       - codex
 
-  - id: build-demo
+  - id: kedro-build-demo
     category: onboarding
     description: >-
       Builds a new, small, end-to-end Kedro demo for someone's use case, with a
