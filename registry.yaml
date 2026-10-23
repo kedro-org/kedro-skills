@@ -46,3 +46,32 @@ skills:
       - copilot
       - claude
       - codex
+
+  - id: kedro-deploy-databricks
+    category: deployment
+    description: >-
+      Kedro deployment guidance for Databricks. Use when choosing between Git
+      folders, Databricks Connect and Declarative Automation Bundles (DABs, formerly
+      Databricks Asset Bundles), packaging a Kedro project as a wheel, generating or
+      editing a bundle with kedro-databricks, getting conf and environments onto
+      Databricks, using Unity Catalog volumes, reading secrets from secret scopes,
+      mapping nodes to job tasks, or validating a bundle before deploying. Defers
+      cluster configuration, permissions and Terraform or deploy-engine errors to
+      Databricks documentation.
+    paths:
+      - "databricks.yml"
+      - "databricks.yaml"
+      - "resources/*.yml"
+      - "resources/*.yaml"
+      - "resources/**/*.yml"
+      - "resources/**/*.yaml"
+      - "conf/**/databricks*.yml"
+      - "conf/**/databricks*.yaml"
+      - "conf/**/databricks/**/*.yml"
+      - "conf/**/databricks/**/*.yaml"
+      - ".github/workflows/*databricks*.yml"
+    ide_support:
+      - cursor
+      - copilot
+      - claude
+      - codex
