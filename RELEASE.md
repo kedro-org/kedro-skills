@@ -2,6 +2,7 @@
 ## Major features and improvements
 - Added the `llm-context-nodes` skill: guidance for the `llm_context_node` API, activated on `src/**/pipelines/**/*.py`.
 - Added `parameters-and-config` skill, offering guidance for writing Kedro parameter and credential files.
+- Added the `explain-project` skill: guidance for explaining an existing Kedro project's structure, pipelines, data flow and configuration.
 - `kedro skills` commands now work outside a Kedro project, installing into the current directory.
 - Added the `kedro-build-demo` skill: guidance for building a small, end-to-end Kedro demo with a verified result, a self-contained HTML walkthrough showing its project location and Kedro-Viz guidance; other audience material only on request. Telemetry opt-out is documented for offline runs or user preference.
 - Skills with empty `paths` now render request-based discovery instructions and omit file patterns from Cursor and Copilot wrappers.
