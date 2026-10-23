@@ -56,6 +56,12 @@ skills:
       wants to see whether and how Kedro would work for their problem. Not for
       changing or explaining an existing project.
     paths: []
+    ide_support:
+      - cursor
+      - copilot
+      - claude
+      - codex
+
   - id: explain-project
     category: onboarding
     description: >-
