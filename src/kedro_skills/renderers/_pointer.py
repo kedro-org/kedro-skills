@@ -20,10 +20,19 @@ def pointer_body(skill_id: str, paths: Sequence[str]) -> str:
     ignored, and the agent answers from stale training data without ever
     opening the file.
 
-    It names *paths* rather than relying on surrounding context, because the
-    text has to stand alone in ``AGENTS.md``, which is loaded for every task
-    rather than scoped to matching files.
+    File-scoped skills name *paths* explicitly because ``AGENTS.md`` is loaded
+    for every task. Skills without paths apply only to matching requests.
     """
+    if not paths:
+        return (
+            "IMPORTANT: Use this skill only when the user's request matches "
+            "its description.\n"
+            f"You MUST read `{skill_path(skill_id)}` BEFORE planning, answering, "
+            "or working on that request.\n"
+            "Do not load it solely because a file is being edited.\n"
+            "If you cannot read the file, tell the user instead of guessing.\n"
+        )
+
     globs = ", ".join(f"`{p}`" for p in paths)
     return (
         f"IMPORTANT: When working on files matching {globs}, do NOT answer "

@@ -80,11 +80,18 @@ class TestPackagedSkill:
             assert f"`{glob}`" in agents_md
 
         cursor = _frontmatter_of(kedro_project / ".cursor/rules" / f"{skill.id}.mdc")
-        assert cursor["globs"] == ", ".join(skill.paths)
+        if skill.paths:
+            assert cursor["globs"] == ", ".join(skill.paths)
+        else:
+            assert "globs" not in cursor
+            assert cursor["alwaysApply"] is False
         assert cursor["description"]
 
         copilot = _frontmatter_of(
             kedro_project / ".github/instructions" / f"{skill.id}.instructions.md"
         )
-        assert copilot["applyTo"] == ", ".join(skill.paths)
+        if skill.paths:
+            assert copilot["applyTo"] == ", ".join(skill.paths)
+        else:
+            assert "applyTo" not in copilot
         assert copilot["description"]

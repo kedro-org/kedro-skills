@@ -47,6 +47,21 @@ skills:
       - claude
       - codex
 
+  - id: kedro-build-demo
+    category: onboarding
+    description: >-
+      Builds a new, small, end-to-end Kedro demo for someone's use case, with a
+      working project, a self-contained HTML walkthrough and Kedro-Viz guidance.
+      Use when someone asks for a Kedro demo or proof of concept, or
+      wants to see whether and how Kedro would work for their problem. Not for
+      changing or explaining an existing project.
+    paths: []
+    ide_support:
+      - cursor
+      - copilot
+      - claude
+      - codex
+
   - id: explain-project
     category: onboarding
     description: >-
