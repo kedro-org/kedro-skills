@@ -32,6 +32,7 @@ Outside a Kedro project, the commands use the current directory instead.
 | Skill | Activates on | Guidance |
 |-------|--------------|----------|
 | `catalog-config` | `conf/**/*.yml`, `conf/**/*.yaml` | Data catalog entries: dataset types, factories, credentials, interpolation |
+| `explain-project` | `src/**/pipeline_registry.py`, `src/**/settings.py` | Explaining an existing project: pipelines, data flow, catalog, configuration and Kedro-Viz |
 | `kedro-deploy-databricks` | `databricks.yml`, `resources/**/*.yml`, `conf/**/databricks*.yml` (and `.yaml`), `.github/workflows/*databricks*.yml` | Deploying to Databricks: choosing a path, packaging, conf and environments, volumes, secrets, nodes to tasks, checking before deploying |
 | `llm-context-nodes` | `src/**/pipelines/**/*.py` | The `llm_context_node` API for composing LLMs, prompts and tools |
 | `parameters-and-config` | `conf/**/parameters*.yml` and `conf/**/credentials*.yml` | Parameters, credentials, configuration interpolation and runtime overrides. |
