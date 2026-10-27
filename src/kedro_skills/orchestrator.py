@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from kedro_skills import __version__
 from kedro_skills.installer import FileRecord, write_canonical
-from kedro_skills.registry import get_skill
+from kedro_skills.registry import RENAMED_SKILL_IDS, get_skill
 from kedro_skills.renderers import agents_md, claude, copilot, cursor
 from kedro_skills.state import DriftedFile, SkillState
 
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from kedro_skills.registry import SkillMetadata
+    from kedro_skills.state import InstalledState
 
     _RendererFn = Callable[[SkillMetadata, Path], list[FileRecord]]
 
@@ -44,6 +45,15 @@ def _infer_ides_from_records(files: list[FileRecord]) -> list[str]:
             if "claude" not in ides:
                 ides.append("claude")
     return ides
+
+
+def _installed_old_ids(installed: InstalledState, skill_id: str) -> list[str]:
+    """Return the ids *skill_id* was installed under before it was renamed."""
+    return [
+        old_id
+        for old_id, new_id in RENAMED_SKILL_IDS.items()
+        if new_id == skill_id and old_id in installed.skills
+    ]
 
 
 @dataclass
@@ -167,13 +177,22 @@ def install_skill(
     ides: list[str] | None = None,
     force: bool = False,
 ) -> OperationResult:
-    """Install a single skill into the project."""
+    """Install a single skill into the project.
+
+    An install of the same skill under its old, pre-``kedro-`` id is replaced
+    rather than left alongside the new one.
+    """
+    from kedro_skills import state  # noqa: PLC0415
+
     skill = get_skill(skill_id)
     requested = (
         ides if ides is not None else [i for i in skill.ide_support if i in _VALID_IDES]
     )
+    old_ids = _installed_old_ids(state.read(project_root), skill_id)
 
     drifted = check_drift_for_skill(project_root, skill_id)
+    for old_id in old_ids:
+        drifted.extend(check_drift_for_skill(project_root, old_id))
     if drifted and not force:
         return OperationResult(
             skill_id=skill_id,
@@ -182,11 +201,12 @@ def install_skill(
             refused=drifted,
         )
 
+    for old_id in old_ids:
+        uninstall_skill(old_id, project_root, force=True)
+
     canonical_record = write_canonical(skill, project_root)
     all_records: list[FileRecord] = [canonical_record]
     all_records.extend(_dispatch_renderers(skill, project_root, ides))
-
-    from kedro_skills import state  # noqa: PLC0415
 
     installed = state.read(project_root)
     installed.skills[skill_id] = SkillState(version=__version__, files=all_records)
@@ -201,41 +221,40 @@ def install_skill(
 
 
 def update_skills(project_root: Path, force: bool = False) -> list[OperationResult]:
-    """Re-install all currently installed skills."""
+    """Re-install all currently installed skills for the IDEs they were installed for.
+
+    A skill installed under its old, pre-``kedro-`` id is re-installed under its
+    new id.
+    """
     from kedro_skills import state  # noqa: PLC0415
 
     installed = state.read(project_root)
     if not installed.skills:
         return []
 
+    skill_ids = dict.fromkeys(RENAMED_SKILL_IDS.get(i, i) for i in installed.skills)
+
     results: list[OperationResult] = []
-    for skill_id in list(installed.skills.keys()):
-        drifted = check_drift_for_skill(project_root, skill_id)
-        if drifted and not force:
-            skill = get_skill(skill_id)
-            requested = [i for i in skill.ide_support if i in _VALID_IDES]
-            results.append(
-                OperationResult(
-                    skill_id=skill_id,
-                    operation="update",
-                    requested_ides=requested,
-                    refused=drifted,
-                )
+    for skill_id in skill_ids:
+        records = [
+            rec
+            for installed_id in [skill_id, *_installed_old_ids(installed, skill_id)]
+            if installed_id in installed.skills
+            for rec in installed.skills[installed_id].files
+        ]
+        installed_ides = _infer_ides_from_records(records)
+        result = install_skill(
+            skill_id, project_root, ides=installed_ides or None, force=force
+        )
+        results.append(
+            OperationResult(
+                skill_id=result.skill_id,
+                operation="update",
+                requested_ides=result.requested_ides,
+                written=result.written,
+                refused=result.refused,
             )
-        else:
-            installed_ides = _infer_ides_from_records(installed.skills[skill_id].files)
-            result = install_skill(
-                skill_id, project_root, ides=installed_ides or None, force=True
-            )
-            results.append(
-                OperationResult(
-                    skill_id=result.skill_id,
-                    operation="update",
-                    requested_ides=result.requested_ides,
-                    written=result.written,
-                    refused=result.refused,
-                )
-            )
+        )
 
     return results
 
@@ -254,7 +273,7 @@ def uninstall_skill(
         )
 
     skill_state = installed.skills[skill_id]
-    skill = get_skill(skill_id)
+    skill = get_skill(RENAMED_SKILL_IDS.get(skill_id, skill_id))
     requested = [i for i in skill.ide_support if i in _VALID_IDES]
 
     written: list[FileRecord] = []

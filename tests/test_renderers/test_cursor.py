@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 SKILL = SkillMetadata(
-    id="catalog-config",
+    id="kedro-catalog-config",
     category="data",
     description="Kedro data catalog configuration guidance",
     paths=["conf/**/*.yml", "conf/**/*.yaml"],
@@ -26,7 +26,7 @@ globs: conf/**/*.yml, conf/**/*.yaml
 ---
 
 IMPORTANT: When working on files matching `conf/**/*.yml`, `conf/**/*.yaml`, do NOT answer from internal knowledge.
-You MUST read `.agents/skills/catalog-config/SKILL.md` BEFORE writing, editing, or suggesting changes to them.
+You MUST read `.agents/skills/kedro-catalog-config/SKILL.md` BEFORE writing, editing, or suggesting changes to them.
 Your training data is likely outdated — that file holds the current, verified guidance.
 If you cannot read the file, tell the user instead of guessing.
 """
@@ -35,7 +35,7 @@ If you cannot read the file, tell the user instead of guessing.
 class TestRender:
     def test_creates_mdc_file(self, tmp_path: Path) -> None:
         render(SKILL, tmp_path)
-        assert (tmp_path / ".cursor" / "rules" / "catalog-config.mdc").is_file()
+        assert (tmp_path / ".cursor" / "rules" / "kedro-catalog-config.mdc").is_file()
 
     def test_creates_directory_structure(self, tmp_path: Path) -> None:
         render(SKILL, tmp_path)
@@ -43,7 +43,7 @@ class TestRender:
 
     def test_golden_file_content(self, tmp_path: Path) -> None:
         render(SKILL, tmp_path)
-        actual = (tmp_path / ".cursor/rules/catalog-config.mdc").read_text()
+        actual = (tmp_path / ".cursor/rules/kedro-catalog-config.mdc").read_text()
         assert actual == EXPECTED_CONTENT
 
     def test_returns_file_record(self, tmp_path: Path) -> None:
@@ -51,7 +51,7 @@ class TestRender:
         assert len(records) == 1
         rec = records[0]
         assert isinstance(rec, FileRecord)
-        assert rec.path == ".cursor/rules/catalog-config.mdc"
+        assert rec.path == ".cursor/rules/kedro-catalog-config.mdc"
         assert rec.kind == "activation_wrapper"
         assert rec.block_id is None
         assert len(rec.sha256) == 64
@@ -63,21 +63,21 @@ class TestRender:
 
     def test_globs_are_comma_separated(self, tmp_path: Path) -> None:
         render(SKILL, tmp_path)
-        content = (tmp_path / ".cursor/rules/catalog-config.mdc").read_text()
+        content = (tmp_path / ".cursor/rules/kedro-catalog-config.mdc").read_text()
         assert "globs: conf/**/*.yml, conf/**/*.yaml" in content
 
 
 class TestMultilineDescription:
     def test_description_is_single_line(self, tmp_path: Path) -> None:
         skill = SkillMetadata(
-            id="catalog-config",
+            id="kedro-catalog-config",
             category="data",
             description="Line one.\nLine two.\n  Extra spaces.",
             paths=["conf/**/*.yml"],
             ide_support=["cursor"],
         )
         render(skill, tmp_path)
-        content = (tmp_path / ".cursor/rules/catalog-config.mdc").read_text()
+        content = (tmp_path / ".cursor/rules/kedro-catalog-config.mdc").read_text()
         for line in content.splitlines():
             if line.startswith("description:"):
                 assert "\n" not in line
@@ -90,8 +90,8 @@ class TestMultilineDescription:
 class TestIdempotency:
     def test_render_twice_same_result(self, tmp_path: Path) -> None:
         r1 = render(SKILL, tmp_path)
-        content1 = (tmp_path / ".cursor/rules/catalog-config.mdc").read_text()
+        content1 = (tmp_path / ".cursor/rules/kedro-catalog-config.mdc").read_text()
         r2 = render(SKILL, tmp_path)
-        content2 = (tmp_path / ".cursor/rules/catalog-config.mdc").read_text()
+        content2 = (tmp_path / ".cursor/rules/kedro-catalog-config.mdc").read_text()
         assert r1 == r2
         assert content1 == content2

@@ -1,9 +1,13 @@
 # Upcoming Release
 ## Major features and improvements
-- Added the `llm-context-nodes` skill: guidance for the `llm_context_node` API, activated on `src/**/pipelines/**/*.py`.
-- Added `parameters-and-config` skill, offering guidance for writing Kedro parameter and credential files.
-- Added the `explain-project` skill: guidance for explaining an existing Kedro project's structure, pipelines, data flow and configuration.
+- Added the `kedro-llm-context-nodes` skill: guidance for the `llm_context_node` API, activated on `src/**/pipelines/**/*.py`.
+- Added `kedro-parameters-and-config` skill, offering guidance for writing Kedro parameter and credential files.
+- Added the `kedro-explain-project` skill: guidance for explaining an existing Kedro project's structure, pipelines, data flow and configuration.
 - `kedro skills` commands now work outside a Kedro project, installing into the current directory.
+## Breaking changes
+- Skill ids now start with `kedro-`, so Kedro's skills stand apart from other skills installed alongside them: `catalog-config` is now `kedro-catalog-config`. Run `kedro skills update` to move skills installed under their old ids to the new ones; `kedro skills list` shows any that still need moving.
+## Bug fixes and other changes
+- The registry now rejects skill ids that don't follow the `kedro-` naming convention, so CI catches them.
 
 # Release 0.2.0
 ## Major features and improvements

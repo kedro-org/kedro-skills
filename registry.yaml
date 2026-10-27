@@ -1,5 +1,5 @@
 skills:
-  - id: catalog-config
+  - id: kedro-catalog-config
     category: data
     description: >-
       Kedro catalog configuration guidance for conf/**/*.yml files. Use when adding
@@ -14,7 +14,7 @@ skills:
       - claude
       - codex
 
-  - id: parameters-and-config
+  - id: kedro-parameters-and-config
     category: data
     description: >-
       Kedro parameters and credentials guidance for conf/**/parameters*.yml and
@@ -31,7 +31,7 @@ skills:
       - claude
       - codex
 
-  - id: llm-context-nodes
+  - id: kedro-llm-context-nodes
     category: genai
     description: >-
       Guidance for Kedro's llm_context_node, LLMContextNode, LLMContext and
@@ -47,7 +47,7 @@ skills:
       - claude
       - codex
 
-  - id: explain-project
+  - id: kedro-explain-project
     category: onboarding
     description: >-
       Guidance for explaining an existing Kedro project, covering its structure,

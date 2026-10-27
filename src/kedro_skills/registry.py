@@ -3,10 +3,45 @@
 from __future__ import annotations
 
 import importlib.resources
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
+
+SKILL_ID_PREFIX = "kedro-"
+
+_MAX_SKILL_ID_LENGTH = 64
+_NAME_PATTERN = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*")
+
+# Skill ids used before the ``kedro-`` prefix, mapped to their current id, so
+# installs made under the old name can still be updated and uninstalled.
+RENAMED_SKILL_IDS = {
+    "catalog-config": "kedro-catalog-config",
+    "explain-project": "kedro-explain-project",
+    "llm-context-nodes": "kedro-llm-context-nodes",
+    "parameters-and-config": "kedro-parameters-and-config",
+}
+
+
+def validate_skill_id(skill_id: str) -> None:
+    """Raise ``ValueError`` unless *skill_id* follows the skill naming convention.
+
+    Every id starts with ``kedro-`` so Kedro's skills stand apart from any others
+    the user has installed. The id is also the Agent Skills ``name``, so it must
+    be at most 64 characters of lowercase letters, digits and single hyphens.
+    """
+    if not skill_id.startswith(SKILL_ID_PREFIX):
+        raise ValueError(
+            f"Skill id {skill_id!r} must start with {SKILL_ID_PREFIX!r}, "
+            f"for example {SKILL_ID_PREFIX + skill_id!r}"
+        )
+    if len(skill_id) > _MAX_SKILL_ID_LENGTH or not _NAME_PATTERN.fullmatch(skill_id):
+        raise ValueError(
+            f"Skill id {skill_id!r} must be at most {_MAX_SKILL_ID_LENGTH} "
+            "characters of lowercase letters, digits and single hyphens, "
+            "and must not end with a hyphen"
+        )
 
 
 @dataclass(frozen=True)
@@ -37,8 +72,11 @@ def _validate_entry(entry: object, index: int) -> SkillMetadata:
             f"is missing required fields: {', '.join(sorted(missing))}"
         )
 
+    skill_id = str(entry["id"])
+    validate_skill_id(skill_id)
+
     return SkillMetadata(
-        id=str(entry["id"]),
+        id=skill_id,
         category=str(entry["category"]),
         description=str(entry["description"]).strip(),
         paths=[str(p) for p in entry["paths"]],
@@ -89,6 +127,10 @@ def get_skill(skill_id: str) -> SkillMetadata:
     for skill in skills:
         if skill.id == skill_id:
             return skill
+    if skill_id in RENAMED_SKILL_IDS:
+        raise KeyError(
+            f"Skill {skill_id!r} has been renamed to {RENAMED_SKILL_IDS[skill_id]!r}"
+        )
     available = [s.id for s in skills]
     raise KeyError(
         f"Unknown skill {skill_id!r}. Available skills: {', '.join(available)}"
