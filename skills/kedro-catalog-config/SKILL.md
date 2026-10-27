@@ -1,5 +1,5 @@
 ---
-name: catalog-config
+name: kedro-catalog-config
 description: >-
   Kedro catalog configuration guidance for conf/**/*.yml files. Use when adding
   datasets, editing catalog entries, setting up factories, or working with

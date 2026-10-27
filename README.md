@@ -19,7 +19,7 @@ pip install kedro-skills
 ```bash
 # Inside any Kedro project:
 kedro skills list
-kedro skills install catalog-config
+kedro skills install kedro-catalog-config
 ```
 
 This writes managed files into your Kedro project. They should be committed to git so
@@ -31,20 +31,20 @@ Outside a Kedro project, the commands use the current directory instead.
 
 | Skill | Activates on | Guidance |
 |-------|--------------|----------|
-| `catalog-config` | `conf/**/*.yml`, `conf/**/*.yaml` | Data catalog entries: dataset types, factories, credentials, interpolation |
-| `explain-project` | `src/**/pipeline_registry.py`, `src/**/settings.py` | Explaining an existing project: pipelines, data flow, catalog, configuration and Kedro-Viz |
-| `llm-context-nodes` | `src/**/pipelines/**/*.py` | The `llm_context_node` API for composing LLMs, prompts and tools |
-| `parameters-and-configs` | `conf/**/parameters*.yml` and `conf/**/credentials*.yml` | Parameters, credentials, configuration interpolation and runtime overrides. |
+| `kedro-catalog-config` | `conf/**/*.yml`, `conf/**/*.yaml` | Data catalog entries: dataset types, factories, credentials, interpolation |
+| `kedro-explain-project` | `src/**/pipeline_registry.py`, `src/**/settings.py` | Explaining an existing project: pipelines, data flow, catalog, configuration and Kedro-Viz |
+| `kedro-llm-context-nodes` | `src/**/pipelines/**/*.py` | The `llm_context_node` API for composing LLMs, prompts and tools |
+| `kedro-parameters-and-config` | `conf/**/parameters*.yml` and `conf/**/credentials*.yml` | Parameters, credentials, configuration interpolation and runtime overrides. |
 
 ## What it writes
 
 ```
 my-kedro-project/
-├── .agents/skills/catalog-config/SKILL.md              # canonical (Agent Skills standard)
-├── AGENTS.md                                           # content discovery (Cursor, Copilot, Codex CLI)
-├── .cursor/rules/catalog-config.mdc                    # glob-scoped activation (Cursor)
-├── .github/instructions/catalog-config.instructions.md # glob-scoped activation (Copilot)
-└── .claude/skills/catalog-config/SKILL.md              # Claude Code (inline copy, always discoverable)
+├── .agents/skills/kedro-catalog-config/SKILL.md              # canonical (Agent Skills standard)
+├── AGENTS.md                                                 # content discovery (Cursor, Copilot, Codex CLI)
+├── .cursor/rules/kedro-catalog-config.mdc                    # glob-scoped activation (Cursor)
+├── .github/instructions/kedro-catalog-config.instructions.md # glob-scoped activation (Copilot)
+└── .claude/skills/kedro-catalog-config/SKILL.md              # Claude Code (inline copy, always discoverable)
 ```
 
 `AGENTS.md` is the content-discovery channel — one file reaches Cursor, Copilot,
@@ -87,26 +87,26 @@ cd test-project
 # See what's available
 kedro skills list
 
-# Install the catalog-config skill
-kedro skills install catalog-config
+# Install the kedro-catalog-config skill
+kedro skills install kedro-catalog-config
 
 # Check what was written
-ls .agents/skills/catalog-config/SKILL.md
+ls .agents/skills/kedro-catalog-config/SKILL.md
 cat AGENTS.md
 ls .cursor/rules/
 ls .github/instructions/
-ls .claude/skills/catalog-config/
+ls .claude/skills/kedro-catalog-config/
 
 # Running install again is safe — nothing changes
-kedro skills install catalog-config --ide cursor,copilot,claude
+kedro skills install kedro-catalog-config --ide cursor,copilot,claude
 
 # If you hand-edit a managed file, update will let you know
-echo "modified" > .cursor/rules/catalog-config.mdc
+echo "modified" > .cursor/rules/kedro-catalog-config.mdc
 kedro skills update          # refuses and names the modified file
 kedro skills update --force  # overwrites your edit with the managed version
 
 # Clean removal when you no longer need a skill
-kedro skills uninstall catalog-config
+kedro skills uninstall kedro-catalog-config
 kedro skills list            # back to "not installed"
 ```
 

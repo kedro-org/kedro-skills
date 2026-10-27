@@ -31,7 +31,7 @@ class TestSkillsList:
         monkeypatch.chdir(kedro_project)
         result = CliRunner().invoke(skills, ["list"])
         assert result.exit_code == 0
-        assert "catalog-config" in result.output
+        assert "kedro-catalog-config" in result.output
         assert "not installed" in result.output
 
     def test_list_outside_kedro_project(
@@ -42,7 +42,7 @@ class TestSkillsList:
         assert result.exit_code == 0
         assert "Not inside a Kedro project" in result.output
         assert str(non_kedro_dir) in result.output
-        assert "catalog-config" in result.output
+        assert "kedro-catalog-config" in result.output
 
 
 class TestInstallOutput:
@@ -53,7 +53,7 @@ class TestInstallOutput:
     ) -> None:
         monkeypatch.chdir(kedro_project)
         result = CliRunner().invoke(
-            skills, ["install", "catalog-config"], input="all\n"
+            skills, ["install", "kedro-catalog-config"], input="all\n"
         )
         assert result.exit_code == 0
         assert "5 files" in result.output
@@ -63,7 +63,7 @@ class TestInstallOutput:
     ) -> None:
         monkeypatch.chdir(kedro_project)
         result = CliRunner().invoke(
-            skills, ["install", "catalog-config"], input="cursor\n"
+            skills, ["install", "kedro-catalog-config"], input="cursor\n"
         )
         assert result.exit_code == 0
         assert "3 files" in result.output
@@ -73,7 +73,7 @@ class TestInstallOutput:
     ) -> None:
         monkeypatch.chdir(kedro_project)
         result = CliRunner().invoke(
-            skills, ["install", "catalog-config", "--ide", "cursor"]
+            skills, ["install", "kedro-catalog-config", "--ide", "cursor"]
         )
         assert result.exit_code == 0
         assert "3 files" in result.output
@@ -100,14 +100,14 @@ class TestTelemetryEvents:
     ) -> None:
         monkeypatch.chdir(kedro_project)
         result = CliRunner().invoke(
-            skills, ["install", "catalog-config", "--ide", "cursor"]
+            skills, ["install", "kedro-catalog-config", "--ide", "cursor"]
         )
         assert result.exit_code == 0
         assert sent_events == [
             (
                 "kedro_skills_install",
                 {
-                    "skill_id": "catalog-config",
+                    "skill_id": "kedro-catalog-config",
                     "target_ides": "cursor",
                     "install_all": False,
                     "success": True,
@@ -127,7 +127,9 @@ class TestTelemetryEvents:
         assert len(sent_events) >= 1
         assert all(name == "kedro_skills_install" for name, _ in sent_events)
         assert all(props["install_all"] is True for _, props in sent_events)
-        assert any(props["skill_id"] == "catalog-config" for _, props in sent_events)
+        assert any(
+            props["skill_id"] == "kedro-catalog-config" for _, props in sent_events
+        )
 
     def test_install_unknown_skill_masks_id(
         self,
@@ -154,7 +156,9 @@ class TestTelemetryEvents:
         sent_events: list[tuple[str, dict[str, Any]]],
     ) -> None:
         monkeypatch.chdir(kedro_project)
-        CliRunner().invoke(skills, ["install", "catalog-config", "--ide", "cursor"])
+        CliRunner().invoke(
+            skills, ["install", "kedro-catalog-config", "--ide", "cursor"]
+        )
         sent_events.clear()
 
         result = CliRunner().invoke(skills, ["update"])
@@ -189,13 +193,15 @@ class TestTelemetryEvents:
         sent_events: list[tuple[str, dict[str, Any]]],
     ) -> None:
         monkeypatch.chdir(kedro_project)
-        CliRunner().invoke(skills, ["install", "catalog-config", "--ide", "cursor"])
+        CliRunner().invoke(
+            skills, ["install", "kedro-catalog-config", "--ide", "cursor"]
+        )
         sent_events.clear()
 
-        result = CliRunner().invoke(skills, ["uninstall", "catalog-config"])
+        result = CliRunner().invoke(skills, ["uninstall", "kedro-catalog-config"])
         assert result.exit_code == 0
         assert sent_events == [
-            ("kedro_skills_uninstall", {"skill_id": "catalog-config"})
+            ("kedro_skills_uninstall", {"skill_id": "kedro-catalog-config"})
         ]
 
     def test_list_sends_no_event(
@@ -216,6 +222,6 @@ class TestTelemetryEvents:
         monkeypatch.setitem(sys.modules, "kedro_telemetry", None)
         monkeypatch.setitem(sys.modules, "kedro_telemetry.api", None)
         result = CliRunner().invoke(
-            skills, ["install", "catalog-config", "--ide", "cursor"]
+            skills, ["install", "kedro-catalog-config", "--ide", "cursor"]
         )
         assert result.exit_code == 0

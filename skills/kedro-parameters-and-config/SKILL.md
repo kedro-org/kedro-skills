@@ -1,5 +1,5 @@
 ---
-name: parameters-and-config
+name: kedro-parameters-and-config
 description: >-
   Kedro parameters and credentials guidance for conf/**/parameters*.yml and
   conf/**/credentials*.yml files. Use when editing parameters, credentials,

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 SKILL = SkillMetadata(
-    id="catalog-config",
+    id="kedro-catalog-config",
     category="data",
     description="Catalog guidance",
     paths=["conf/**/*.yml"],
@@ -42,15 +42,17 @@ class TestComputeSha256:
 class TestWriteCanonical:
     def test_produces_correct_path(self, tmp_path: Path) -> None:
         record = write_canonical(SKILL, tmp_path)
-        expected_path = ".agents/skills/catalog-config/SKILL.md"
+        expected_path = ".agents/skills/kedro-catalog-config/SKILL.md"
         assert record.path == expected_path
         assert (tmp_path / expected_path).exists()
 
     def test_content_is_byte_identical(self, tmp_path: Path) -> None:
         write_canonical(SKILL, tmp_path)
-        written = (tmp_path / ".agents/skills/catalog-config/SKILL.md").read_bytes()
+        written = (
+            tmp_path / ".agents/skills/kedro-catalog-config/SKILL.md"
+        ).read_bytes()
 
-        original = _resolve_skill_path("catalog-config").read_bytes()
+        original = _resolve_skill_path("kedro-catalog-config").read_bytes()
         assert written == original
 
     def test_sha256_is_valid(self, tmp_path: Path) -> None:
