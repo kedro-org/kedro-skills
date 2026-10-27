@@ -20,15 +20,19 @@ def list_skills() -> None:
     """List available skills and their install status."""
     project_root = find_project_root()
 
-    from kedro_skills.registry import load_registry  # noqa: PLC0415
+    from kedro_skills.registry import (  # noqa: PLC0415
+        RENAMED_SKILL_IDS,
+        load_registry,
+    )
     from kedro_skills.state import read  # noqa: PLC0415
 
     registry = load_registry()
     installed = read(project_root)
+    id_width = max((len(skill.id) for skill in registry), default=len("ID"))
 
     click.echo("\nAvailable skills:\n")
-    click.echo(f"  {'ID':<20} {'Category':<12} {'Status':<14} Description")
-    click.echo(f"  {'─' * 20} {'─' * 12} {'─' * 14} {'─' * 40}")
+    click.echo(f"  {'ID':<{id_width}} {'Category':<12} {'Status':<14} Description")
+    click.echo(f"  {'─' * id_width} {'─' * 12} {'─' * 14} {'─' * 40}")
 
     for skill in registry:
         if skill.id in installed.skills:
@@ -42,7 +46,16 @@ def list_skills() -> None:
             if len(skill.description) > _max_desc
             else skill.description
         )
-        click.echo(f"  {skill.id:<20} {skill.category:<12} {status:<14} {desc}")
+        click.echo(f"  {skill.id:<{id_width}} {skill.category:<12} {status:<14} {desc}")
+
+    renamed = [
+        skill_id for skill_id in installed.skills if skill_id in RENAMED_SKILL_IDS
+    ]
+    if renamed:
+        click.echo("\nThese installed skills have been renamed:\n")
+        for skill_id in renamed:
+            click.echo(f"  {skill_id} → {RENAMED_SKILL_IDS[skill_id]}")
+        click.echo("\nRun `kedro skills update` to install them under their new names.")
 
     click.echo()
 

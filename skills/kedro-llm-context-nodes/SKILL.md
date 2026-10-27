@@ -1,5 +1,5 @@
 ---
-name: llm-context-nodes
+name: kedro-llm-context-nodes
 description: >-
   Guidance for Kedro's llm_context_node, LLMContextNode, LLMContext and tool()
   API in src/**/pipelines/**/*.py. Use when composing an LLM dataset, prompt
@@ -110,7 +110,7 @@ What `.invoke(...)` accepts and returns depends on the LLM library the `llm` dat
 
 Write `llm="llm"` and `prompts=["system_prompt"]`, then define those datasets in the catalog. A model object or an inline prompt string fails node validation. A `params:` entry is accepted as a prompt (it lands in `context.prompts["params:system_prompt"]`, prefix included), but it puts prompt text in `parameters.yml` where prompt datasets and Langfuse or Opik versioning cannot see it, so prefer a prompt dataset. `prompts` is required: use `prompts=[]` when there are none.
 
-- The LLM dataset is normally one of the `kedro-datasets` chat datasets, for example `langchain.ChatOpenAIDataset`, `langchain.ChatAnthropicDataset` or `langchain.ChatCohereDataset`, with `credentials:` pointing at `conf/local/credentials.yml`. The credentials mapping is passed straight into the model constructor, so its keys must be constructor arguments (`api_key`, `base_url`). Verify the type exists in the installed `kedro-datasets` before writing the entry (follow the `catalog-config` skill if it is installed).
+- The LLM dataset is normally one of the `kedro-datasets` chat datasets, for example `langchain.ChatOpenAIDataset`, `langchain.ChatAnthropicDataset` or `langchain.ChatCohereDataset`, with `credentials:` pointing at `conf/local/credentials.yml`. The credentials mapping is passed straight into the model constructor, so its keys must be constructor arguments (`api_key`, `base_url`). Verify the type exists in the installed `kedro-datasets` before writing the entry (follow the `kedro-catalog-config` skill if it is installed).
 - Prompt datasets return whatever their type loads: a `str` for `text.TextDataset`, a `PromptTemplate` or `ChatPromptTemplate` for `kedro_datasets_experimental.langchain.PromptDataset`, and provider objects for the `langfuse` and `opik` prompt datasets. The context stores that value unchanged under the dataset's name: `context.prompts["system_prompt"]`.
 - **kedro-datasets 9.4.0 renamed the prompt datasets** by dropping the package prefix: `langchain.LangChainPromptDataset` became `langchain.PromptDataset`, `langfuse.LangfusePromptDataset` became `langfuse.PromptDataset`, `opik.OpikPromptDataset` became `opik.PromptDataset` (and the extras changed the same way, for example `langchain-promptdataset`). The Kedro docs page may still show the old names. Check the installed `kedro-datasets` version and use the name that exists in it.
 

@@ -1,5 +1,5 @@
 ---
-name: explain-project
+name: kedro-explain-project
 description: >-
   Guidance for explaining an existing Kedro project, covering its structure,
   registered pipelines, data flow, Data Catalog, parameters, configuration,
@@ -18,7 +18,7 @@ description: >-
 
 Answer in the conversation, and save an overview to a file only if the user asks. Flag concrete problems you find without fixing them. Apart from an overview file the user asks for, explaining is read-only: do not create, edit or delete project files, install packages without asking, or run the pipeline, call node functions or load datasets (Rule 7).
 
-For the rules behind catalog entries, parameters or LLM context nodes, follow the `catalog-config`, `parameters-and-config` or `llm-context-nodes` skill if it is installed.
+For the rules behind catalog entries, parameters or LLM context nodes, follow the `kedro-catalog-config`, `kedro-parameters-and-config` or `kedro-llm-context-nodes` skill if it is installed.
 
 **CRITICAL:** Describe what Kedro resolves, not what file names or the order of code suggest. The pipeline registry decides which pipelines exist, dataset names decide the order nodes run in, and a dataset with no catalog entry or matching factory is kept in memory and never saved. A pipeline folder missing from the registry was skipped by discovery, usually after a failed import, unless the registry code leaves it out or renames it. Check the installed versions first, ask before loading the project's code, never run the pipeline, and never print credential values.
 
