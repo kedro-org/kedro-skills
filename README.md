@@ -5,8 +5,8 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 Distribute AI coding skills to Kedro projects. One command installs contextual
-guidance that activates automatically when your AI assistant edits matching
-files — across Cursor, GitHub Copilot, Claude Code, and Codex CLI.
+guidance selected by the task or matching files — across Cursor, GitHub Copilot,
+Claude Code, and Codex CLI.
 
 ## Installation
 
@@ -32,8 +32,10 @@ Outside a Kedro project, the commands use the current directory instead.
 | Skill | Activates on | Guidance |
 |-------|--------------|----------|
 | `catalog-config` | `conf/**/*.yml`, `conf/**/*.yaml` | Data catalog entries: dataset types, factories, credentials, interpolation |
+| `explain-project` | `src/**/pipeline_registry.py`, `src/**/settings.py` | Explaining an existing project: pipelines, data flow, catalog, configuration and Kedro-Viz |
 | `llm-context-nodes` | `src/**/pipelines/**/*.py` | The `llm_context_node` API for composing LLMs, prompts and tools |
 | `parameters-and-configs` | `conf/**/parameters*.yml` and `conf/**/credentials*.yml` | Parameters, credentials, configuration interpolation and runtime overrides. |
+| `kedro-build-demo` | Requests for a new demo or proof of concept | A new, small end-to-end Kedro demo with a working result, an offline HTML walkthrough and Kedro-Viz guidance; other audience material only on request |
 
 ## What it writes
 
@@ -48,8 +50,15 @@ my-kedro-project/
 
 `AGENTS.md` is the content-discovery channel — one file reaches Cursor, Copilot,
 and Codex CLI. `.cursor/rules/` and
-`.github/instructions/` add glob-scoped activation so the skill fires only when
-editing matching files, not on every prompt.
+`.github/instructions/` add glob-scoped activation for skills with file patterns.
+Skills with `paths: []`, such as `kedro-build-demo`, use their descriptions instead:
+their wrappers omit file patterns, and their AGENTS.md blocks apply only to
+matching requests. They can be installed in an empty folder before a project exists.
+
+If you installed the earlier PR preview as `build-demo`, run
+`kedro skills uninstall build-demo` with that preview still installed, before
+upgrading the package. Then install `kedro-build-demo`. The preview name is not
+an alias for the new name.
 
 ## CLI reference
 
@@ -68,9 +77,9 @@ editing matching files, not on every prompt.
 ## IDE-specific notes
 
 - **Claude Code:** Reads `.claude/skills/<id>/SKILL.md` directly. The skill is always discoverable (no `paths:` scoping in the Claude copy). If you want `AGENTS.md` content in Claude sessions too, add `@AGENTS.md` to a `CLAUDE.md` file.
-- **Cursor:** `.cursor/rules/*.mdc` fires only when editing files matching `globs:` patterns.
-- **GitHub Copilot:** `.github/instructions/*.instructions.md` fires only when editing files matching `applyTo:` patterns.
-- **Codex CLI:** Reads `AGENTS.md` natively. Skill block is always active.
+- **Cursor:** `.cursor/rules/*.mdc` uses `globs:` for matching files, or a description with `alwaysApply: false` for agent-selected relevance when no paths are specified.
+- **GitHub Copilot:** `.github/instructions/*.instructions.md` uses `applyTo:` for matching files, or a description for on-demand discovery when no paths are specified.
+- **Codex CLI:** Reads `AGENTS.md` natively. Each skill block states whether it applies to matching files or matching requests.
 
 ## How to try it out
 

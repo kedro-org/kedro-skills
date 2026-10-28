@@ -16,19 +16,21 @@ if TYPE_CHECKING:
 def render(skill: SkillMetadata, project_root: Path) -> list[FileRecord]:
     """Write a ``.cursor/rules/<id>.mdc`` file for *skill*.
 
-    The file contains ``description:`` and ``globs:`` frontmatter plus a
-    body that forcefully instructs the agent to read the canonical
-    ``SKILL.md`` before answering.
+    File-scoped skills use ``globs:``. Skills without paths omit globs and use
+    their description for agent-selected activation, with ``alwaysApply: false``.
+    Both point to the canonical ``SKILL.md``.
 
     Returns a single-element list with a :class:`FileRecord` using
     ``kind="activation_wrapper"``.
     """
-    globs = ", ".join(skill.paths)
+    scope = (
+        f"globs: {', '.join(skill.paths)}\n" if skill.paths else "alwaysApply: false\n"
+    )
 
     content = (
         f"---\n"
         f"description: {' '.join(skill.description.split())}\n"
-        f"globs: {globs}\n"
+        f"{scope}"
         f"---\n"
         f"\n"
         f"{pointer_body(skill.id, skill.paths)}"

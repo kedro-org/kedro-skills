@@ -6,7 +6,10 @@
 ## Bug fixes and other changes
 - Fixed `kedro skills uninstall` silently deleting non-drifted files when a drifted file was present. Uninstall now prompts the user to keep (as unmanaged) or delete modified files, defaulting to keep. Added `--keep-modified` and `--force` flags for non-interactive use. 
 - The uninstall telemetry event now includes `success` and `drift_detected` fields.
+- Added the `explain-project` skill: guidance for explaining an existing Kedro project's structure, pipelines, data flow and configuration.
 - `kedro skills` commands now work outside a Kedro project, installing into the current directory.
+- Added the `kedro-build-demo` skill: guidance for building a small, end-to-end Kedro demo with a verified result, a self-contained HTML walkthrough showing its project location and Kedro-Viz guidance; other audience material only on request. Telemetry opt-out is documented for offline runs or user preference.
+- Skills with empty `paths` now render request-based discovery instructions and omit file patterns from Cursor and Copilot wrappers.
 
 # Release 0.2.0
 
