@@ -16,20 +16,19 @@ if TYPE_CHECKING:
 def render(skill: SkillMetadata, project_root: Path) -> list[FileRecord]:
     """Write a ``.github/instructions/<id>.instructions.md`` file for *skill*.
 
-    The file contains ``description:`` and ``applyTo:`` frontmatter plus a body
-    that instructs the agent to read the canonical ``SKILL.md`` before
-    answering.  ``description`` is what drives Copilot's task-relevance
-    matching when no ``applyTo`` glob is in context, so it is not optional.
+    File-scoped skills use ``applyTo:``. Skills without paths omit that field
+    and use ``description`` for on-demand discovery. Both point to the
+    canonical ``SKILL.md``.
 
     Returns a single-element list with a :class:`FileRecord` using
     ``kind="activation_wrapper"``.
     """
-    apply_to = ", ".join(skill.paths)
+    scope = f"applyTo: {', '.join(skill.paths)}\n" if skill.paths else ""
 
     content = (
         f"---\n"
         f"description: {' '.join(skill.description.split())}\n"
-        f"applyTo: {apply_to}\n"
+        f"{scope}"
         f"---\n"
         f"\n"
         f"{pointer_body(skill.id, skill.paths)}"
