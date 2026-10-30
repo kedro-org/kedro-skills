@@ -178,6 +178,8 @@ With Databricks Connect, check how the installed kedro-datasets decides to use i
 
 ## Check before deploying
 
+Steps 1 and 2 below need Kedro 1.8.0 or later; the `grouping check` line printed under "Step 1: check what is installed" says whether the installed Kedro has them. On an older Kedro, say the grouping check is not available yet and go on to step 3: with `-g node`, kedro-databricks still refuses in-memory datasets when it generates the bundle.
+
 Do these in order, using the environment the job will use (`<env>`), never `local`:
 
 **1. List the groups.** Groups are what a deployment can run as separate tasks:
