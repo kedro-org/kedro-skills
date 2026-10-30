@@ -189,6 +189,10 @@ Credentials belong **exclusively** in `conf/local/credentials.yml`, which is
 gitignored by the Kedro project template. **Never** place credentials in
 `conf/base/` — that directory is version-controlled.
 
+The exception is an environment deployed to Databricks, where `conf/local`
+never reaches the job: follow the `kedro-deploy-databricks` skill if it is
+installed.
+
 ### Loading credentials from environment variables
 
 The `${oc.env:VAR}` resolver loads environment variables, but it is **enabled

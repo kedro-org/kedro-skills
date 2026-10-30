@@ -8,6 +8,7 @@
 - The uninstall telemetry event now includes `success` and `drift_detected` fields.
 - Added the `explain-project` skill: guidance for explaining an existing Kedro project's structure, pipelines, data flow and configuration.
 - `kedro skills` commands now work outside a Kedro project, installing into the current directory.
+- Added the `kedro-deploy-databricks` skill: guidance for deploying Kedro projects to Databricks, activated on `databricks.yml`, `resources/**/*.yml`, `conf/**/databricks*.yml` (and their `.yaml` forms) and `.github/workflows/*databricks*.yml`.
 - Added the `kedro-build-demo` skill: guidance for building a small, end-to-end Kedro demo with a verified result, a self-contained HTML walkthrough showing its project location and Kedro-Viz guidance; other audience material only on request. Telemetry opt-out is documented for offline runs or user preference.
 - Skills with empty `paths` now render request-based discovery instructions and omit file patterns from Cursor and Copilot wrappers.
 
