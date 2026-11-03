@@ -146,6 +146,8 @@ With Databricks Connect, check how the installed kedro-datasets decides to use i
              environment_variables_key: secrets
      ```
 
+     `kedro databricks init` writes `environment_version: "4"` in this file. Change it to `'5'`, because environment variables need version 5 or later.
+
      This is a Beta feature that a workspace admin may need to turn on, and secrets are resolved as the job's run-as identity: link `https://docs.databricks.com/aws/en/jobs/environment-variables`. On classic job clusters the same reference goes in `spark_env_vars` instead: link `https://docs.databricks.com/aws/en/security/secrets/secrets-spark-conf-env-var`.
   2. Register a custom resolver in `settings.py` (`CONFIG_LOADER_ARGS["custom_resolvers"]`) that reads the scope, and use it only in `conf/<env>/credentials.yml`, for example `password: ${dbx_secret:<scope>,<key>}`. Give it a local fallback, because the check below and `kedro databricks bundle` load the configuration (and run hooks) on the developer's machine:
 
