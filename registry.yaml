@@ -98,13 +98,12 @@ skills:
       - "databricks.yaml"
       - "resources/*.yml"
       - "resources/*.yaml"
-      - "resources/**/*.yml"
-      - "resources/**/*.yaml"
       - "conf/**/databricks*.yml"
       - "conf/**/databricks*.yaml"
       - "conf/**/databricks/**/*.yml"
       - "conf/**/databricks/**/*.yaml"
       - ".github/workflows/*databricks*.yml"
+      - ".github/workflows/*databricks*.yaml"
     ide_support:
       - cursor
       - copilot
