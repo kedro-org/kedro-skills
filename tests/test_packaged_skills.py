@@ -79,13 +79,17 @@ class TestPackagedSkill:
         for glob in skill.paths:
             assert f"`{glob}`" in agents_md
 
+        # The description is written as a bare YAML value, so a stray " #" or
+        # ": " would cut it short or break it without failing to parse.
+        description = " ".join(skill.description.split())
+
         cursor = _frontmatter_of(kedro_project / ".cursor/rules" / f"{skill.id}.mdc")
         if skill.paths:
             assert cursor["globs"] == ", ".join(skill.paths)
         else:
             assert "globs" not in cursor
             assert cursor["alwaysApply"] is False
-        assert cursor["description"]
+        assert cursor["description"] == description
 
         copilot = _frontmatter_of(
             kedro_project / ".github/instructions" / f"{skill.id}.instructions.md"
@@ -94,4 +98,4 @@ class TestPackagedSkill:
             assert copilot["applyTo"] == ", ".join(skill.paths)
         else:
             assert "applyTo" not in copilot
-        assert copilot["description"]
+        assert copilot["description"] == description
