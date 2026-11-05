@@ -43,7 +43,13 @@ skills/
 │   └── SKILL.md        # Canonical skill content (Agent Skills standard)
 ├── llm-context-nodes/
 │   └── SKILL.md
+├── explain-project/
+│   └── SKILL.md
+├── kedro-deploy-databricks/
+│   └── SKILL.md
 └── kedro-testing-pipelines/
+│   └── SKILL.md
+└── parameters-and-config/
     └── SKILL.md
 
 registry.yaml           # Skill metadata: id, category, paths, ide_support

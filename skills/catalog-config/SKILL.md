@@ -180,6 +180,8 @@ Place `filepath` values in the correct layer directory:
 | Model output | `data/07_model_output/` | Predictions and scores |
 | Reporting | `data/08_reporting/` | Dashboards, plots, report tables |
 
+In an environment deployed to Databricks, keep these layer folders but under the environment's volume path: follow the `kedro-deploy-databricks` skill if it is installed.
+
 ## Credentials
 
 Reference credentials by key — do not inline secrets:
@@ -194,6 +196,8 @@ my_dataset:
 The key (`my_credentials`) must match an entry in `conf/local/credentials.yml`.
 
 **Never** create or edit credential files under `conf/base/` — that directory is version-controlled and secrets would be committed. Credentials belong **exclusively** in `conf/local/credentials.yml`, which is gitignored by the project template.
+
+The exception is an environment deployed to Databricks, where `conf/local` never reaches the job: follow the `kedro-deploy-databricks` skill if it is installed.
 
 For advanced credential patterns (nested `client_kwargs`, S3, SQL connection strings, per-environment overrides), refer to: https://docs.kedro.org/en/stable/catalog-data/data_catalog_yaml_examples/
 
