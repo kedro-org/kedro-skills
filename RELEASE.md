@@ -1,16 +1,19 @@
 # Upcoming Release
 
 ## Major features and improvements
-- Added the `llm-context-nodes` skill: guidance for the `llm_context_node` API, activated on `src/**/pipelines/**/*.py`.
-- Added `parameters-and-config` skill, offering guidance for writing Kedro parameter and credential files.
-## Bug fixes and other changes
-- Fixed `kedro skills uninstall` silently deleting non-drifted files when a drifted file was present. Uninstall now prompts the user to keep (as unmanaged) or delete modified files, defaulting to keep. Added `--keep-modified` and `--force` flags for non-interactive use. 
-- The uninstall telemetry event now includes `success` and `drift_detected` fields.
-- Added the `explain-project` skill: guidance for explaining an existing Kedro project's structure, pipelines, data flow and configuration.
-- `kedro skills` commands now work outside a Kedro project, installing into the current directory.
+- Added the `kedro-llm-context-nodes` skill: guidance for the `llm_context_node` API, activated on `src/**/pipelines/**/*.py`.
+- Added `kedro-parameters-and-config` skill, offering guidance for writing Kedro parameter and credential files.
+- Added the `kedro-explain-project` skill: guidance for explaining an existing Kedro project's structure, pipelines, data flow and configuration.
 - Added the `kedro-deploy-databricks` skill: guidance for deploying Kedro projects to Databricks, activated on `databricks.yml`, `resources/*.yml`, `conf/**/databricks*.yml`, `conf/**/databricks/**/*.yml` and `.github/workflows/*databricks*.yml` (and their `.yaml` forms).
 - Added the `kedro-build-demo` skill: guidance for building a small, end-to-end Kedro demo with a verified result, a self-contained HTML walkthrough showing its project location and Kedro-Viz guidance; other audience material only on request. Telemetry opt-out is documented for offline runs or user preference.
+- `kedro skills` commands now work outside a Kedro project, installing into the current directory.
 - Skills with empty `paths` now render request-based discovery instructions and omit file patterns from Cursor and Copilot wrappers.
+## Breaking changes
+- Skill ids now start with `kedro-`, so Kedro's skills stand apart from other skills installed alongside them: `catalog-config` is now `kedro-catalog-config`. Run `kedro skills update` to move skills installed under their old ids to the new ones; `kedro skills list` shows any that still need moving.
+## Bug fixes and other changes
+- Fixed `kedro skills uninstall` silently deleting non-drifted files when a drifted file was present. Uninstall now prompts the user to keep (as unmanaged) or delete modified files, defaulting to keep. Added `--keep-modified` and `--force` flags for non-interactive use.
+- The uninstall telemetry event now includes `success` and `drift_detected` fields.
+- The registry now rejects skill ids that don't follow the `kedro-` naming convention, so CI catches them.
 
 # Release 0.2.0
 

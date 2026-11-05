@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 def _make_state(
-    skill_id: str = "catalog-config", sha: str = "abc123"
+    skill_id: str = "kedro-catalog-config", sha: str = "abc123"
 ) -> InstalledState:
     return InstalledState(
         kedro_skills_version="0.1.0",
@@ -47,10 +47,10 @@ class TestRoundTrip:
 
         assert loaded.kedro_skills_version == original.kedro_skills_version
         assert set(loaded.skills) == set(original.skills)
-        skill = loaded.skills["catalog-config"]
+        skill = loaded.skills["kedro-catalog-config"]
         assert skill.version == "0.1.0"
         assert len(skill.files) == 1
-        assert skill.files[0].path == ".agents/skills/catalog-config/SKILL.md"
+        assert skill.files[0].path == ".agents/skills/kedro-catalog-config/SKILL.md"
         assert skill.files[0].sha256 == "abc123"
 
     def test_round_trip_preserves_multiple_skills(self, tmp_path: Path) -> None:
@@ -116,7 +116,7 @@ class TestAtomicWrite:
         write(tmp_path, _make_state(sha="first"))
         write(tmp_path, _make_state(sha="second"))
         loaded = read(tmp_path)
-        assert loaded.skills["catalog-config"].files[0].sha256 == "second"
+        assert loaded.skills["kedro-catalog-config"].files[0].sha256 == "second"
 
 
 class TestDetectDrift:
@@ -129,22 +129,24 @@ class TestDetectDrift:
 
     def test_no_drift_when_unchanged(self, tmp_path: Path) -> None:
         sha = self._install_file(
-            tmp_path, ".agents/skills/catalog-config/SKILL.md", "original"
+            tmp_path, ".agents/skills/kedro-catalog-config/SKILL.md", "original"
         )
         write(tmp_path, _make_state(sha=sha))
 
-        drifted = detect_drift(tmp_path, "catalog-config")
+        drifted = detect_drift(tmp_path, "kedro-catalog-config")
         assert drifted == []
 
     def test_drift_when_modified(self, tmp_path: Path) -> None:
         sha = self._install_file(
-            tmp_path, ".agents/skills/catalog-config/SKILL.md", "original"
+            tmp_path, ".agents/skills/kedro-catalog-config/SKILL.md", "original"
         )
         write(tmp_path, _make_state(sha=sha))
 
-        (tmp_path / ".agents/skills/catalog-config/SKILL.md").write_text("edited!")
+        (tmp_path / ".agents/skills/kedro-catalog-config/SKILL.md").write_text(
+            "edited!"
+        )
 
-        drifted = detect_drift(tmp_path, "catalog-config")
+        drifted = detect_drift(tmp_path, "kedro-catalog-config")
         assert len(drifted) == 1
         assert isinstance(drifted[0], DriftedFile)
         assert drifted[0].expected_sha256 == sha
@@ -154,7 +156,7 @@ class TestDetectDrift:
     def test_drift_when_file_missing(self, tmp_path: Path) -> None:
         write(tmp_path, _make_state(sha="recorded"))
 
-        drifted = detect_drift(tmp_path, "catalog-config")
+        drifted = detect_drift(tmp_path, "kedro-catalog-config")
         assert len(drifted) == 1
         assert drifted[0].actual_sha256 is None
 
@@ -163,4 +165,4 @@ class TestDetectDrift:
         assert detect_drift(tmp_path, "nonexistent") == []
 
     def test_no_state_file_returns_empty(self, tmp_path: Path) -> None:
-        assert detect_drift(tmp_path, "catalog-config") == []
+        assert detect_drift(tmp_path, "kedro-catalog-config") == []

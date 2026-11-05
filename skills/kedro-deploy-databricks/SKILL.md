@@ -121,7 +121,7 @@ With Databricks Connect, check how the installed kedro-datasets decides to use i
 ## Secrets
 
 - Neither Kedro nor kedro-databricks has a built-in resolver for Databricks secret scopes. Never put secret values in YAML, bundle variables or job parameters.
-- For Databricks environments, credentials live in `conf/<env>/credentials.yml` as references only. This overrides the "credentials only in `conf/local`" rule in the `catalog-config` and `parameters-and-config` skills for those environments, because `conf/local` is never deployed.
+- For Databricks environments, credentials live in `conf/<env>/credentials.yml` as references only. This overrides the "credentials only in `conf/local`" rule in the `kedro-catalog-config` and `kedro-parameters-and-config` skills for those environments, because `conf/local` is never deployed.
 - Two patterns work:
   1. Reference an environment variable in `conf/<env>/credentials.yml`, `password: ${oc.env:DB_PASSWORD}`, and have the job set it from a secret scope. On serverless jobs (environment version 5 or later), add a job-level `environment_variables` entry whose value is exactly `{{secrets/<scope>/<key>}}`, and point each task at it. With kedro-databricks, put both under the default job in `conf/<env>/databricks.yml`:
 

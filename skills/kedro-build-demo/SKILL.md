@@ -15,7 +15,7 @@ Every demo you build or prepare includes a self-contained `DEMO.html` walkthroug
 
 - Build in a new folder, or in a fresh blank project the user created for the demo (template files only, no pipelines yet). If the current folder is a project with real pipelines, leave it untouched and ask where the demo should go.
 - For a question only about whether Kedro fits, answer it (step 1) and offer to build. Create nothing yet.
-- Out of scope: changing or explaining an existing project (`explain-project` covers explaining), deployment, production hardening and serving live requests.
+- Out of scope: changing or explaining an existing project (`kedro-explain-project` covers explaining), deployment, production hardening and serving live requests.
 
 **CRITICAL:**
 - Say plainly where Kedro helps and where it does not.
@@ -116,8 +116,8 @@ Install them once the user agrees.
 - **Catalog:** add an entry for every input and every result worth showing. Data that stays in memory is fine between steps, but say so in the walkthrough.
   - Choose a dataset whose save method accepts the node's output: a DataFrame to `pandas.CSVDataset` or `pandas.ParquetDataset`, JSON-serialisable data to `json.JSONDataset`, a Plotly figure to `plotly.JSONDataset`, a Matplotlib figure to `matplotlib.MatplotlibDataset`.
   - Some types are read-only, such as `pandas.SQLQueryDataset`.
-  - Follow `catalog-config` when it is installed, otherwise the kedro-datasets docs.
-- **Parameters:** put tunable values in the parameters files and read them as `params:<key>`. Keep each top-level group in one file. If another environment overrides a group, the default merge replaces the whole group, so repeat its other keys there. Follow `parameters-and-config` when it is installed.
+  - Follow `kedro-catalog-config` when it is installed, otherwise the kedro-datasets docs.
+- **Parameters:** put tunable values in the parameters files and read them as `params:<key>`. Keep each top-level group in one file. If another environment overrides a group, the default merge replaces the whole group, so repeat its other keys there. Follow `kedro-parameters-and-config` when it is installed.
 - **Credentials:** reference them by name, and tell the user which keys to fill in.
   - Name the credential keys your catalog references, for example `credentials: openai`, and ask the user to confirm they exist.
   - `conf/local/credentials.yml` (gitignored) is read only in the default run environment.
@@ -155,7 +155,7 @@ Where they help the story, make the graph easier to read in Kedro-Viz:
   - An agent's own loop runs inside one node and does not appear as separate graph nodes. A `MermaidPreview` can sketch it.
   - Keep the calls bounded: no open-ended loops or repeated retries.
 - **Model access.** kedro-datasets provides `langchain.ChatOpenAIDataset`, `langchain.ChatAnthropicDataset`, `langchain.ChatCohereDataset` and `langchain.OpenAIEmbeddingsDataset`. Experimental Langfuse and Opik prompt and trace datasets also exist. Use the one that matches the user's stack, and check its type name and extra in the installed version's docs. Keep model clients and context objects in memory (`MemoryDataset` with `copy_mode: assign`).
-- **LLM context nodes.** Use `llm_context_node` (Kedro 1.2+) only when a node needs an LLM with prompts or tools bundled, and follow `llm-context-nodes` when it is installed. The `support-agent-langgraph` starter is a full reference.
+- **LLM context nodes.** Use `llm_context_node` (Kedro 1.2+) only when a node needs an LLM with prompts or tools bundled, and follow `kedro-llm-context-nodes` when it is installed. The `support-agent-langgraph` starter is a full reference.
 - **Execution mode.** Name it:
   - **live:** a real provider. It needs a key, can cost money and needs an OK first.
   - **local:** a model running on the machine.

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
@@ -10,15 +11,28 @@ from click.testing import CliRunner
 
 from kedro_skills.cli import skills
 from kedro_skills.installer import _resolve_skill_path
-from kedro_skills.registry import load_registry
+from kedro_skills.registry import RENAMED_SKILL_IDS, load_registry
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from kedro_skills.registry import SkillMetadata
 
 SKILLS = load_registry()
+SKILL_IDS = {s.id for s in SKILLS}
+SKILLS_DIR = Path(__file__).parents[1] / "skills"
 IDES = ["cursor", "copilot", "claude"]
+
+
+def test_every_skill_directory_is_registered() -> None:
+    """``load_registry`` enforces the naming convention on registered ids only, so
+    an unregistered directory would slip past it."""
+    directories = {p.name for p in SKILLS_DIR.iterdir() if p.is_dir()}
+    assert directories == SKILL_IDS
+
+
+@pytest.mark.parametrize(("old_id", "new_id"), RENAMED_SKILL_IDS.items())
+def test_renamed_id_points_at_registered_skill(old_id: str, new_id: str) -> None:
+    assert new_id in SKILL_IDS
+    assert old_id not in SKILL_IDS
 
 
 def _split_frontmatter(skill_id: str) -> tuple[dict, str]:
