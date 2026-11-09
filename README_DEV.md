@@ -41,11 +41,13 @@ src/kedro_skills/
 skills/
 ├── catalog-config/
 │   └── SKILL.md        # Canonical skill content (Agent Skills standard)
+├── llm-context-nodes/
+│   └── SKILL.md
 ├── explain-project/
 │   └── SKILL.md
 ├── kedro-deploy-databricks/
 │   └── SKILL.md
-├── llm-context-nodes/
+└── kedro-testing-pipelines/
 │   └── SKILL.md
 └── parameters-and-config/
     └── SKILL.md
