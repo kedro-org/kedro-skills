@@ -24,7 +24,7 @@ and why.
 | catalog key `"model_options"` | `"params:model_options"` | the node input is the literal `params:` name |
 | `catalog.load("X_train")` after a full run | run `create_pipeline().to_outputs("X_train")` | intermediates are released |
 | a `KedroSession` to get data for a node test | a small hand-built DataFrame | a node is a plain function |
-| `session.run(pipeline_name=...)` | `pipeline_names=[...]` | `pipeline_name=` is deprecated |
+| `session.run(pipeline_name=...)` on Kedro 1.2+ | `pipeline_names=[...]` | `pipeline_name=` is deprecated since 1.2.0; below 1.2 only `pipeline_name=` exists |
 | `runtime_params={"a.b": 1}` | `runtime_params={"a": {"b": 1}}` | dotted keys are not expanded |
 | `kedro_session` / `catalog` fixtures "from Kedro" | define them in `conftest.py` | Kedro ships none |
 | `.copy()` in every node to protect test data | nothing | `MemoryDataset` already copies |
