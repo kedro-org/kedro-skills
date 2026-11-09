@@ -49,7 +49,9 @@ skills/
 │   └── SKILL.md
 ├── kedro-llm-context-nodes/
 │   └── SKILL.md
-└── kedro-parameters-and-config/
+├── kedro-parameters-and-config/
+│   └── SKILL.md
+└── kedro-testing-pipelines/
     └── SKILL.md
 
 registry.yaml           # Skill metadata: id, category, paths, ide_support

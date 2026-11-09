@@ -4,6 +4,7 @@
 - Added the `kedro-llm-context-nodes` skill: guidance for the `llm_context_node` API, activated on `src/**/pipelines/**/*.py`.
 - Added `kedro-parameters-and-config` skill, offering guidance for writing Kedro parameter and credential files.
 - Added the `kedro-explain-project` skill: guidance for explaining an existing Kedro project's structure, pipelines, data flow and configuration.
+- Added the `kedro-testing-pipelines` skill: guidance for Kedro 1.x testing (node unit tests, in-memory pipeline tests and `KedroSession` smoke tests), activated on `tests/**/*.py`.
 - Added the `kedro-deploy-databricks` skill: guidance for deploying Kedro projects to Databricks, activated on `databricks.yml`, `resources/*.yml`, `conf/**/databricks*.yml`, `conf/**/databricks/**/*.yml` and `.github/workflows/*databricks*.yml` (and their `.yaml` forms).
 - Added the `kedro-build-demo` skill: guidance for building a small, end-to-end Kedro demo with a verified result, a self-contained HTML walkthrough showing its project location and Kedro-Viz guidance; other audience material only on request. Telemetry opt-out is documented for offline runs or user preference.
 - `kedro skills` commands now work outside a Kedro project, installing into the current directory.

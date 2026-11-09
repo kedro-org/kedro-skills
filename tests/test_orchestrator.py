@@ -696,3 +696,42 @@ class TestRenamedSkills:
         assert result.exit_code == 0, result.output
         assert "catalog-config → kedro-catalog-config" in result.output
         assert "kedro skills update" in result.output
+
+
+@pytest.mark.parametrize("skill_id", ["kedro-testing-pipelines"])
+class TestTestingPipelinesSkills:
+    """Install/uninstall lifecycle for the testing skill."""
+
+    def test_install_creates_all_files(
+        self, skill_id: str, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(kedro_project)
+        runner = CliRunner()
+        result = runner.invoke(skills, ["install", skill_id], input="all\n")
+        assert result.exit_code == 0, result.output
+
+        assert (kedro_project / f".agents/skills/{skill_id}/SKILL.md").is_file()
+        assert f"<!-- kedro-skills:{skill_id}:start -->" in (
+            kedro_project / "AGENTS.md"
+        ).read_text(encoding="utf-8")
+        assert (kedro_project / f".cursor/rules/{skill_id}.mdc").is_file()
+        assert (
+            kedro_project / f".github/instructions/{skill_id}.instructions.md"
+        ).is_file()
+        assert (kedro_project / f".claude/skills/{skill_id}/SKILL.md").is_file()
+
+    def test_uninstall_removes_all_files(
+        self, skill_id: str, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(kedro_project)
+        runner = CliRunner()
+        runner.invoke(skills, ["install", skill_id], input="all\n")
+        result = runner.invoke(skills, ["uninstall", skill_id])
+        assert result.exit_code == 0
+
+        assert not (kedro_project / f".agents/skills/{skill_id}/SKILL.md").is_file()
+        assert not (kedro_project / f".cursor/rules/{skill_id}.mdc").is_file()
+        assert not (
+            kedro_project / f".github/instructions/{skill_id}.instructions.md"
+        ).is_file()
+        assert not (kedro_project / f".claude/skills/{skill_id}/SKILL.md").is_file()

@@ -37,6 +37,7 @@ Outside a Kedro project, the commands use the current directory instead.
 | `kedro-explain-project` | `src/**/pipeline_registry.py`, `src/**/settings.py` | Explaining an existing project: pipelines, data flow, catalog, configuration and Kedro-Viz |
 | `kedro-llm-context-nodes` | `src/**/pipelines/**/*.py` | The `llm_context_node` API for composing LLMs, prompts and tools |
 | `kedro-parameters-and-config` | `conf/**/parameters*.yml` and `conf/**/credentials*.yml` | Parameters, credentials, configuration interpolation and runtime overrides. |
+| `kedro-testing-pipelines` | `tests/**/*.py` | Node unit tests, in-memory pipeline tests and `KedroSession` smoke tests |
 
 ## What it writes
 
