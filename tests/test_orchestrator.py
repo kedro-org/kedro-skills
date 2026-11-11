@@ -90,6 +90,7 @@ class TestInstallLifecycle:
         assert result.exit_code == 0
         assert ".cursor/rules/kedro-catalog-config.mdc" in result.output
         assert "refused" in result.output.lower() or "--force" in result.output
+        assert "previous id" not in result.output
 
     def test_update_force_overrides_drift(
         self, kedro_project: Path, monkeypatch: pytest.MonkeyPatch
@@ -590,7 +591,10 @@ class TestRenamedSkills:
 
         result = CliRunner().invoke(skills, ["update"])
         assert result.exit_code == 0, result.output
-        assert ".cursor/rules/catalog-config.mdc (modified)" in result.output
+        assert (
+            ".cursor/rules/catalog-config.mdc "
+            "(modified, from previous id 'catalog-config')"
+        ) in result.output
         assert "--force" in result.output
 
         assert old_rule.read_text(encoding="utf-8") == "user edited content\n"
@@ -657,7 +661,10 @@ class TestRenamedSkills:
             skills, ["install", "kedro-catalog-config", "--ide", "cursor"]
         )
         assert result.exit_code == 0, result.output
-        assert ".cursor/rules/catalog-config.mdc (modified)" in result.output
+        assert (
+            ".cursor/rules/catalog-config.mdc "
+            "(modified, from previous id 'catalog-config')"
+        ) in result.output
 
         assert old_rule.read_text(encoding="utf-8") == "user edited content\n"
         assert list(read(kedro_project).skills) == ["catalog-config"]

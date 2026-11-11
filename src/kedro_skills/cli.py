@@ -270,6 +270,8 @@ def _print_result(result: object) -> None:
         )
         for d in result.refused:
             status = "deleted" if d.actual_sha256 is None else "modified"
+            if d.previous_id:
+                status += f", from previous id '{d.previous_id}'"
             click.echo(f"     {d.path} ({status})")
         click.echo("   Use --force to overwrite.")
     elif result.written or result.kept:

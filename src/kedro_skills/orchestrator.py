@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING
 
 from kedro_skills import __version__
@@ -193,7 +193,10 @@ def install_skill(
 
     drifted = check_drift_for_skill(project_root, skill_id)
     for old_id in old_ids:
-        drifted.extend(check_drift_for_skill(project_root, old_id))
+        drifted.extend(
+            replace(d, previous_id=old_id)
+            for d in check_drift_for_skill(project_root, old_id)
+        )
     if drifted and not force:
         return OperationResult(
             skill_id=skill_id,
