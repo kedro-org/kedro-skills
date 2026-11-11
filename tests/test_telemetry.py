@@ -24,7 +24,7 @@ def _result(
     operation: str,
     written: bool = True,
     refused: bool = False,
-    skill_id: str = "catalog-config",
+    skill_id: str = "kedro-catalog-config",
 ) -> OperationResult:
     return OperationResult(
         skill_id=skill_id,
@@ -37,7 +37,7 @@ def _result(
 
 class TestSafeSkillId:
     def test_registry_skill_id_passes_through(self) -> None:
-        assert telemetry.safe_skill_id("catalog-config") == "catalog-config"
+        assert telemetry.safe_skill_id("kedro-catalog-config") == "kedro-catalog-config"
 
     def test_unknown_id_is_masked(self) -> None:
         assert telemetry.safe_skill_id("../../etc/passwd") == "unknown"
@@ -103,7 +103,7 @@ class TestTrackInstall:
             (
                 "kedro_skills_install",
                 {
-                    "skill_id": "catalog-config",
+                    "skill_id": "kedro-catalog-config",
                     "target_ides": "claude,cursor",
                     "install_all": False,
                     "success": True,
@@ -187,7 +187,7 @@ class TestTrackUninstall:
             (
                 "kedro_skills_uninstall",
                 {
-                    "skill_id": "catalog-config",
+                    "skill_id": "kedro-catalog-config",
                     "success": True,
                     "drift_detected": False,
                 },

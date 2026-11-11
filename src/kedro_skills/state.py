@@ -39,11 +39,15 @@ class InstalledState:
 @dataclass(frozen=True)
 class DriftedFile:
     """Describes a managed file whose on-disk content diverges from the
-    recorded checksum (or is missing entirely)."""
+    recorded checksum (or is missing entirely).
+
+    ``previous_id`` is set when the file belongs to an install under the
+    skill's old, pre-``kedro-`` id."""
 
     path: str
     expected_sha256: str
     actual_sha256: str | None
+    previous_id: str | None = None
 
 
 def _state_path(project_root: Path) -> Path:

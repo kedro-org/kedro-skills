@@ -39,17 +39,19 @@ src/kedro_skills/
     └── _pointer.py     # Shared pointer-line logic
 
 skills/
-├── catalog-config/
+├── kedro-build-demo/
 │   └── SKILL.md        # Canonical skill content (Agent Skills standard)
-├── llm-context-nodes/
-│   └── SKILL.md
-├── explain-project/
+├── kedro-catalog-config/
 │   └── SKILL.md
 ├── kedro-deploy-databricks/
 │   └── SKILL.md
-└── kedro-testing-pipelines/
+├── kedro-explain-project/
 │   └── SKILL.md
-└── parameters-and-config/
+├── kedro-llm-context-nodes/
+│   └── SKILL.md
+├── kedro-parameters-and-config/
+│   └── SKILL.md
+└── kedro-testing-pipelines/
     └── SKILL.md
 
 registry.yaml           # Skill metadata: id, category, paths, ide_support
@@ -62,10 +64,32 @@ pyproject.toml           # Build config (hatchling), dependencies, tool settings
 Before creating a new skill, run `kedro skills list` to check it doesn't overlap
 with an existing one.
 
+### Naming convention
+
+Every skill id starts with `kedro-`, for example `kedro-catalog-config`, so
+Kedro's skills are easy to tell apart from any other skills a user has
+installed. The id is also the skill's Agent Skills `name`, so it may only contain
+lowercase letters, digits and single hyphens, up to 64 characters in total. The
+same id is used for the `skills/<id>/` directory, the `name` in its `SKILL.md`
+frontmatter and the `id` in `registry.yaml`.
+
+`load_registry()` rejects any id that breaks the convention, so `pytest` fails
+in CI until it is fixed. To check an id yourself:
+
+```bash
+python -c "from kedro_skills.registry import validate_skill_id; validate_skill_id('kedro-my-skill')"
+```
+
+When renaming a skill that has already been released, add its old id to
+`RENAMED_SKILL_IDS` in `registry.py`, so `kedro skills update` moves existing
+installs to the new id.
+
+### Steps
+
 1. **Create `skills/<id>/SKILL.md`** with Agent Skills frontmatter:
    ```yaml
    ---
-   name: my-skill
+   name: kedro-my-skill
    description: >-
      What this skill helps with.
    ---
@@ -76,7 +100,7 @@ with an existing one.
 2. **Add a registry entry** in `registry.yaml`:
    ```yaml
    skills:
-     - id: my-skill
+     - id: kedro-my-skill
        category: core
        description: >-
          What this skill helps with.
@@ -94,7 +118,7 @@ with an existing one.
 3. **Test locally:**
    ```bash
    pip install -e .
-   kedro skills install my-skill   # run inside a Kedro project or any directory
+   kedro skills install kedro-my-skill   # run inside a Kedro project or any directory
    ```
 
 4. **Verify output** — check that the canonical file, AGENTS.md block, and
