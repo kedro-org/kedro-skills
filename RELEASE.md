@@ -1,5 +1,7 @@
 # Upcoming Release
 
+# Release 0.3.0
+
 ## Major features and improvements
 - Added the `kedro-llm-context-nodes` skill: guidance for the `llm_context_node` API, activated on `src/**/pipelines/**/*.py`.
 - Added `kedro-parameters-and-config` skill, offering guidance for writing Kedro parameter and credential files.
