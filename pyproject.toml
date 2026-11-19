@@ -119,5 +119,6 @@ select = [
 known-first-party = ["kedro_skills"]
 
 [tool.ruff.lint.per-file-ignores]
+"evals/**/test_*.py" = ["S101"]
 "{tests,docs,tools,static,features}/*" = ["T201", "S101", "S108"]
 "{tests,docs}/*" = ["PLR2004", "PLR0913"]

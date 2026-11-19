@@ -1,4 +1,4 @@
-.PHONY: install lint type-check test build clean
+.PHONY: install lint type-check test build clean eval eval-skill eval-config eval-test eval-check-node
 
 install:
 	pip install -e ".[dev]"
@@ -20,3 +20,51 @@ build:
 clean:
 	rm -rf dist/ build/ *.egg-info src/*.egg-info
 	find . -type d -name __pycache__ -exec rm -rf {} +
+
+# ---- Skill evals (see evals/) ----
+# Needs Node >= 22.22 and API keys, either exported or in $(EVAL_ENV).
+# Extra promptfoo flags go in ARGS, e.g.
+#   make eval-skill SKILL=kedro-parameters-and-config ARGS="--filter-providers gpt-4o --filter-first-n 2"
+PROMPTFOO ?= npx -y promptfoo@0.123.1
+EVAL_ENV ?= evals/.env
+EVAL_ENV_FLAG = $(if $(wildcard $(EVAL_ENV)),--env-file $(EVAL_ENV))
+EVAL_RESULTS ?= evals/results
+# Judge for llm-rubric assertions, as a promptfoo provider id, e.g.
+#   make eval-skill SKILL=kedro-parameters-and-config EVAL_JUDGE=anthropic:messages:claude-haiku-4-5-20251001
+# Empty keeps each suite's defaultTest.options.provider.
+EVAL_JUDGE ?=
+EVAL_JUDGE_FLAG = $(if $(EVAL_JUDGE),--grader $(EVAL_JUDGE))
+# promptfoo exits 100 when any test fails, baseline included. Failed tests exit
+# 0 instead, and evals/lib/gate.js fails the run on with-skill results only.
+# Config and provider errors still exit non-zero.
+EVAL_RUN = PROMPTFOO_FAILED_TEST_EXIT_CODE=0 $(PROMPTFOO) eval $(EVAL_ENV_FLAG) $(EVAL_JUDGE_FLAG) $(ARGS)
+
+eval-check-node:
+	@node -e 'const [a,b]=process.versions.node.split(".").map(Number); if (a<22||(a===22&&b<22)) { console.error("Skill evals need Node >= 22.22, found " + process.versions.node); process.exit(1) }'
+
+eval-test: eval-check-node
+	node --test evals/lib/*.test.js evals/skills/*/*.test.js
+	pytest -q -p no:cacheprovider evals/fixture/test_context.py
+
+eval: eval-check-node eval-test
+	@mkdir -p $(EVAL_RESULTS); status=0; for config in evals/skills/*/promptfooconfig.yaml; do \
+		skill=$$(basename $$(dirname "$$config")); out="$(EVAL_RESULTS)/$$skill.json"; \
+		echo "Evaluating: $$config"; rm -f "$$out"; \
+		$(EVAL_RUN) -c "$$config" -o "$$out" && node evals/lib/gate.js "$$out" || status=1; \
+	done; exit $$status
+
+eval-skill: eval-check-node
+	@test -n "$(SKILL)" || (echo "Usage: make eval-skill SKILL=<skill-id>"; exit 1)
+	@mkdir -p $(EVAL_RESULTS); rm -f $(EVAL_RESULTS)/$(SKILL).json
+	$(EVAL_RUN) -c evals/skills/$(SKILL)/promptfooconfig.yaml -o $(EVAL_RESULTS)/$(SKILL).json
+	@node evals/lib/gate.js $(EVAL_RESULTS)/$(SKILL).json
+
+# Runs one config that is not a skill's promptfooconfig.yaml, e.g. a suite
+# comparing skill variants:
+#   make eval-config CONFIG=evals/skills/<dir>/compare.yaml
+EVAL_CONFIG_OUT = $(EVAL_RESULTS)/$(notdir $(patsubst %/,%,$(dir $(CONFIG))))-$(notdir $(basename $(CONFIG))).json
+eval-config: eval-check-node
+	@test -n "$(CONFIG)" || (echo "Usage: make eval-config CONFIG=<path to promptfoo config>"; exit 1)
+	@mkdir -p $(EVAL_RESULTS); rm -f $(EVAL_CONFIG_OUT)
+	$(EVAL_RUN) -c $(CONFIG) -o $(EVAL_CONFIG_OUT)
+	@node evals/lib/gate.js $(EVAL_CONFIG_OUT)

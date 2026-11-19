@@ -1,3 +1,7 @@
+# evals/fixture/project/ is a verbatim Kedro starter snapshot (see
+# evals/fixture/refresh.sh), and evals/prompts/*.json are Nunjucks templates.
+exclude: ^evals/(fixture/project/|prompts/.*\.json$)
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
