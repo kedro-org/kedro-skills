@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Build a self-contained HTML dashboard from a kedro-quality-review results.json.
+"""Build a self-contained HTML dashboard from a hallmark-quality-review results.json.
 
-Usage: build_dashboard.py RESULTS_JSON OUTPUT_HTML [--open]
+Usage: build_dashboard.py RESULTS_JSON OUTPUT_HTML [--rules RULES_FILE] [--open]
 
 The page is built like a small component tree. Every component is a function that returns an HTML
 string, and the component's styles sit in a CSS_<NAME> constant right above it. Standard library only.
@@ -18,21 +18,28 @@ Where to change what
   Group scoreboard under the verdict ......... Scoreboard          (CSS_BOARD)
   Group heading + score above each table ..... GroupBand           (CSS_BAND)
   Table, rows, status badge .................. CriteriaTable, CriterionRow, StatusBadge (CSS_TABLE)
-  Click-to-open rule and evidence ............ Toggle, Collapse, RuleDetails (CSS_COLLAPSE)
-  Search, filters and open/close behaviour ... SCRIPT
+  Evidence open/close ........................ Toggle, Collapse    (CSS_COLLAPSE)
+  "View rule" side panel . RuleButton, RuleSheet (CSS_SHEET)
+  Rule git history (Last change / Author) .... git_log, RULES_LOG    (read from git at build time)
+  Search, filters, rule editing behaviour .... SCRIPT
   Wording of labels .......................... LABELS
 """
 import argparse
+from datetime import datetime, timezone
 import html
 import json
+import re
+import subprocess
 import sys
 import webbrowser
+from urllib.parse import quote
 from pathlib import Path
 
 E = html.escape
 
 
-GROUPS = ("functional_appropriateness", "performance_efficiency", "maintainability")
+ALL_GROUPS = ("functional_appropriateness", "performance_efficiency", "maintainability")
+GROUPS = list(ALL_GROUPS)
 STATUSES = ("pass", "mixed", "fail")
 LABELS = {"pass": "Pass", "mixed": "Mixed", "fail": "Fail", "optional": "Nice to have"}
 ICONS = {
@@ -421,6 +428,21 @@ CSS_SEGMENTS = """
 
 .seg span {
   flex: 1;
+  transform-origin: left;
+  animation: grow .7s cubic-bezier(.2, .8, .2, 1) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seg span {
+    animation: none;
+  }
 }
 
 .seg .pass {
@@ -446,8 +468,8 @@ def SegmentBar(criteria):
     n = counts(criteria)
     label = f'{n["pass"]} pass, {n["mixed"]} mixed, {n["fail"]} fail, {n["optional"]} nice to have'
     cells = "".join(
-        f'<span class="{c["shown"]}" title="{E(c["title"])}: {LABELS[c["shown"]]}"></span>'
-        for c in criteria
+        f'<span class="{c["shown"]}" style="--i:{i}" title="{E(c["title"])}: {LABELS[c["shown"]]}"></span>'
+        for i, c in enumerate(criteria)
     )
     return f"""
         <div class="seg" role="img" aria-label="{label}">{cells}</div>
@@ -679,6 +701,12 @@ CSS_BAND = """
   font-size: 12px;
 }
 
+.empty {
+  margin: 0;
+  padding: 32px 0;
+  color: var(--ink2);
+}
+
 @media (max-width: 900px) {
   .band {
     padding: 32px 16px;
@@ -703,7 +731,7 @@ def GroupBand(index, group, rows_html):
     if _summary(n):
         detail += f', {_summary(n)}'
     return f"""
-        <section class="band" id="band-{index}">
+        <section class="band" id="band-{index}" data-group>
           <div class="lab">
             <div>
               <h2>{E(group["label"])}</h2>
@@ -715,6 +743,7 @@ def GroupBand(index, group, rows_html):
             </div>
           </div>
           {CriteriaTable(rows_html)}
+          <p class="empty" hidden>No criteria match your filters.</p>
         </section>
     """
 
@@ -751,10 +780,6 @@ tr.row td {
 
 tr.row:first-child td {
   border-top: 0;
-}
-
-tr.detail td {
-  padding: 0;
 }
 
 /* Good news is quiet: passing rows are set in secondary text and regular weight. */
@@ -825,16 +850,41 @@ def StatusBadge(status):
     """
 
 
-def CriterionRow(i, c):
-    """Two table rows: the visible row, and a hidden one that opens to show the rule behind the check."""
-    text = E(f'{c["title"]} {c["message"]} {c.get("suggestion", "")}'.lower())
-    rule = RuleDetails(c)
-    title = Toggle(f"d{i}", E(c["title"])) if rule else E(c["title"])
-    detail = Collapse(f"d{i}", rule)
+# Links from the dashboard back to the code. Evidence like "src/pkg/nodes.py:61" or "conf/a.yml:1-60" becomes
+# a link that opens that file at that line in the editor. ROOT is the project root (--root, default: the
+# current directory) and SCHEME the editor's URL scheme (--editor, default: vscode).
+ROOT = Path.cwd()
+SCHEME = "vscode"
+LOCATION = re.compile(r"^(.*?)(?::(\d+)(?:\s*[-\u2013]\s*\d+)?)?$")
 
+
+def code_href(ref, line=None):
+    """Editor URL for a path or path:line reference. Relative paths are taken from ROOT."""
+    m = LOCATION.match(ref.strip())
+    path, found = m.group(1), m.group(2)
+    full = Path(path) if Path(path).is_absolute() else ROOT / path
+    return f"{SCHEME}://file{quote(str(full), safe='/')}:{line or found or 1}:1"
+
+
+def code_link(ref):
+    return f'<a class="loc" href="{E(code_href(ref))}" title="Open in editor">{E(ref)}</a>'
+
+
+def DefinedIn(data, c):
+    """Small line under View rule: a link to where the rule is written in the rules file."""
+    href = rule_href(data, c)
+    if not href:
+        return ""
+    label = f'{Path(data["rules_source"]).name}:{rule_line(data, c)}'
+    return f'<div class="def"><a class="loc" href="{E(href)}" title="Open the rule in the editor">{E(label)}</a></div>'
+
+
+def CriterionRow(i, c, data):
+    """One table row: criterion (with a View rule button), result, and finding with suggestion and evidence."""
+    text = E(f'{c["title"]} {c["message"]} {c.get("suggestion", "")}'.lower())
     evidence = ""
     if c["evidence"]:
-        items = "".join(f"<li>{E(x)}</li>" for x in c["evidence"])
+        items = "".join(f"<li>{code_link(x)}</li>" for x in c["evidence"])
         evidence = Toggle(f"e{i}", f'Evidence ({len(c["evidence"])})', small=True) + Collapse(f"e{i}", f'<ul class="ev">{items}</ul>')
 
     suggestion = ""
@@ -843,16 +893,13 @@ def CriterionRow(i, c):
 
     return f"""
         <tr class="row {c["shown"]}" id="r{i}" data-status="{c["shown"]}" data-text="{text}">
-          <td>{title}</td>
+          <td>{E(c["title"])}{RuleButton(c["id"], c["title"])}{DefinedIn(data, c)}</td>
           <td>{StatusBadge(c["shown"])}</td>
           <td>
             {E(c["message"])}
             {suggestion}
             {evidence}
           </td>
-        </tr>
-        <tr class="detail" data-for="r{i}">
-          <td colspan="3">{detail}</td>
         </tr>
     """
 
@@ -875,7 +922,7 @@ def CriteriaTable(rows_html):
 
 
 # ======================================================================================================
-# Toggle + Collapse (animated open/close) and RuleDetails (the content of the rule panel)
+# Toggle + Collapse (animated open/close, used for the evidence list)
 # ======================================================================================================
 CSS_COLLAPSE = """
 .tg {
@@ -945,28 +992,6 @@ CSS_COLLAPSE = """
   min-height: 0;
 }
 
-.rule {
-  max-width: 72ch;
-  padding: 0 16px 20px 24px;
-  font-size: 12px;
-  line-height: 1.33;
-  letter-spacing: .024px;
-  color: var(--ink2);
-}
-
-.rule h4 {
-  margin: 12px 0 4px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.rule ul {
-  margin: 0;
-  padding-left: 16px;
-  font-family: inherit;
-}
-
 .ev {
   margin: 8px 0 0;
   padding-left: 16px;
@@ -995,26 +1020,506 @@ def Collapse(id_, inner_html):
     """
 
 
-def RuleDetails(c):
-    rule = c.get("rule")
-    if not isinstance(rule, dict):
-        return ""
+# ======================================================================================================
+# RuleSheet: the "View rule" side panel. Read-only: severity, patterns and last change are shown, not edited.
+# ======================================================================================================
+CSS_SHEET = """
+.rb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  margin: 4px -8px -8px;
+  padding: 4px 8px;
+  background: none;
+  border: 0;
+  border-radius: var(--radius);
+  color: var(--ink2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.33;
+  cursor: pointer;
+  transition: background-color .2s, color .2s;
+}
 
-    def section(key, heading):
-        items = rule.get(key) or []
-        if not items:
-            return ""
-        lis = "".join(f"<li>{E(x)}</li>" for x in items)
-        return f"<h4>{heading}</h4><ul>{lis}</ul>"
+.rb:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
 
+.rb:focus-visible,
+.sheet button:focus-visible,
+.sheet textarea:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.sheet {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(36rem, 100%);
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  background: var(--card);
+  color: var(--ink);
+  border: 0;
+  border-left: 1px solid var(--grid);
+  overflow: hidden;
+}
+
+.sheet[open] {
+  display: flex;
+  flex-direction: column;
+  animation: slide-in .25s cubic-bezier(.2, .8, .2, 1);
+}
+
+.sheet::backdrop {
+  background: rgba(0, 0, 0, .6);
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+.sheet-body {
+  position: relative;
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 24px 32px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  font: 400 12px/1.33 "Roboto Mono", ui-monospace, monospace;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--focus);
+}
+
+.sheet h2 {
+  margin: 0 0 12px;
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1.25;
+}
+
+.gitlog {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 16px;
+  margin: 0 0 16px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  font: 400 12px/1.33 "Roboto Mono", ui-monospace, monospace;
+}
+
+.gitlog dt {
+  color: var(--ink2);
+}
+
+.gitlog dd {
+  margin: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.intent {
+  margin: 0 0 24px;
+  color: var(--ink2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.lbl {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sev {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+
+.sev button {
+  padding: 4px 12px;
+  background: none;
+  border: 1px solid var(--grid);
+  border-radius: 999px;
+  color: var(--ink2);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color .2s, background-color .2s;
+}
+
+.sev button:hover {
+  color: var(--ink);
+}
+
+.sev button[aria-checked=true] {
+  color: var(--ink);
+  border-color: var(--optional);
+}
+
+.sev button[aria-checked=true][data-sev=fail] {
+  background: var(--fail);
+  border-color: var(--fail);
+  color: #fff;
+}
+
+.pl {
+  margin-bottom: 32px;
+  padding-left: 16px;
+  border-left: 2px solid var(--pass);
+}
+
+.pl.anti {
+  border-left-color: var(--fail);
+}
+
+.pl h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pass-t);
+}
+
+.pl.anti h3 {
+  color: var(--fail-t);
+}
+
+.pl ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pl li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.loc {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--grid);
+  text-underline-offset: 3px;
+}
+
+.loc:hover {
+  color: var(--focus);
+  text-decoration-color: var(--focus);
+}
+
+.def {
+  margin: 0 0 -8px;
+  color: var(--ink2);
+  font: 400 11px/1.4 "Roboto Mono", ui-monospace, monospace;
+}
+
+.pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border: 1px solid var(--optional);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.pill[data-sev=fail] {
+  background: var(--fail);
+  border-color: var(--fail);
+  color: #fff;
+}
+
+.sheet .x {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: 1px solid var(--grid);
+  border-radius: 999px;
+  color: var(--ink2);
+  cursor: pointer;
+}
+
+.pl li {
+  display: block;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 8px;
+  color: var(--ink);
+}
+
+.pl textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  resize: none;
+  overflow: hidden;
+  padding: 6px 8px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.43;
+  field-sizing: content;
+}
+
+.pl textarea:hover {
+  background: var(--hover);
+}
+
+.pl textarea:focus {
+  border-color: var(--grid);
+}
+
+.pl .rm {
+  margin-top: 6px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--ink2);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .2s;
+}
+
+.pl li:hover .rm,
+.pl .rm:focus-visible {
+  opacity: 1;
+}
+
+.pl .rm:hover {
+  color: var(--ink);
+}
+
+.pl .add {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 0 8px;
+  background: none;
+  border: 0;
+  color: var(--ink2);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pl .add:hover {
+  color: var(--ink);
+}
+
+.sheet-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--grid);
+  background: var(--card);
+}
+
+.sheet-foot .push {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 16px;
+  background: none;
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color .2s, opacity .2s;
+}
+
+.btn:hover {
+  background: var(--hover);
+}
+
+.btn.ghost {
+  border-color: transparent;
+}
+
+.btn.primary {
+  background: var(--header-bg);
+  border-color: var(--header-bg);
+  color: var(--header-ink);
+}
+
+.btn.primary:hover {
+  opacity: .9;
+}
+
+.btn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet[open] {
+    animation: none;
+  }
+}
+"""
+
+
+def RuleButton(criterion_id, title):
     return f"""
-        <div class="rule">
-          {E(rule.get("summary", ""))}
-          {section("good", "Good pattern")}
-          {section("anti", "Anti-pattern")}
-          <div class="sub" style="margin-top:12px">Source: {E(c.get("source", ""))}</div>
-        </div>
+        <button class="rb" data-rule="{E(criterion_id)}" data-title="{E(title)}" aria-haspopup="dialog" aria-label="View rule: {E(title)}">
+          {ICON_BOOK}View rule
+        </button>
     """
+
+
+def RuleSheet():
+    """An empty, read-only dialog. SCRIPT fills it in for whichever criterion's View rule button was clicked."""
+    return f"""
+        <dialog class="sheet" id="rule-sheet" aria-labelledby="rs-title">
+          <div class="sheet-body">
+            <button class="x" id="rs-close" type="button" aria-label="Close">{ICON_X}</button>
+            <p class="eyebrow" id="rs-eyebrow">Rule</p>
+            <h2 id="rs-title"></h2>
+            <dl class="gitlog" id="rs-log"></dl>
+            <p class="lbl" id="rs-sev-label">Severity</p>
+            <div class="sev" id="rs-sev" aria-labelledby="rs-sev-label"></div>
+            <div class="pl good" id="rs-good"></div>
+            <div class="pl anti" id="rs-anti"></div>
+          </div>
+        </dialog>
+    """
+
+
+def as_list(value):
+    """The rule text as a list of lines. results.json may hold one sentence (str) or a list of them."""
+    if not value:
+        return []
+    if isinstance(value, str):
+        return [value]
+    return [str(x) for x in value]
+
+
+def rule_line(data, c):
+    """Line of the criterion's "## title" heading in the rules file, or None."""
+    return data.get("rule_lines", {}).get(c["title"])
+
+
+def rule_ref(data, c):
+    line = rule_line(data, c)
+    return f'{data.get("rules_source", "")}:{line}' if line else ""
+
+
+def rule_href(data, c):
+    line = rule_line(data, c)
+    return code_href(data["rules_source"], line) if line and data.get("rules_source") else ""
+
+
+def RulesData(data):
+    """Default rules and git history as JSON for SCRIPT. Defaults come from results.json, local edits are layered on top in the browser."""
+    rules = {}
+    for k in GROUPS:
+        for c in data["groups"][k]["criteria"]:
+            r = c.get("rule") if isinstance(c.get("rule"), dict) else {}
+            rules[c["id"]] = {
+                "good": as_list(r.get("good")),
+                "anti": as_list(r.get("anti")),
+                "source": c.get("source", ""),
+                "severity": "nice" if c.get("optional") else "fail",
+            }
+    payload = {"project": data.get("project", ""), "rules": rules, "log": data["rules_log"]}
+    # "</" would end the script element early.
+    return json.dumps(payload).replace("</", "<\\/")
+
+
+def git_log(rules_file):
+    """Last commits that touched the rules file, newest first (git log -10).
+
+    Falls back to the template version in .copier-answers.yml (with the file's modified time) when the
+    project has no git history for the rules file yet. Empty when neither is available.
+    """
+    if not rules_file:
+        return []
+    path = Path(rules_file)
+    if not path.is_file():
+        return []
+    log = []
+    try:
+        out = subprocess.run(
+            ["git", "-c", "safe.directory=*", "log", "-10", "--format=%H%x1f%an%x1f%cI%x1f%s", "--", path.name],
+            cwd=path.resolve().parent, capture_output=True, text=True, check=True, timeout=10,
+        ).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        out = ""
+    for line in out.splitlines():
+        h, author, date, subject = (line.split("\x1f") + ["", "", "", ""])[:4]
+        log.append({"hash": h, "author": author, "date": date, "subject": subject})
+    return log or copier_version(path)
+
+
+def copier_version(path):
+    """One log entry for the template version the rules came from, read from .copier-answers.yml."""
+    for base in path.resolve().parents:
+        answers = base / ".copier-answers.yml"
+        if answers.is_file():
+            match = re.search(r"^_commit:\s*(\S+)", answers.read_text(), re.M)
+            if match:
+                modified = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc).isoformat()
+                return [{"hash": match.group(1), "author": "", "date": modified, "subject": "template version"}]
+            return []
+    return []
+
+
+def heading_lines(rules_file):
+    """Map each "## title" in the rules file to its line number, so a rule can link to where it is written."""
+    if not rules_file or not Path(rules_file).is_file():
+        return {}
+    lines = Path(rules_file).read_text().splitlines()
+    return {line[3:].strip(): n for n, line in enumerate(lines, start=1) if line.startswith("## ")}
+
+
+def find_rules_file(data, results_path, explicit):
+    """--rules wins. Otherwise try rules_source from results.json next to the results file, then up the tree."""
+    if explicit:
+        return Path(explicit)
+    source = data.get("rules_source")
+    if not source:
+        return None
+    here = Path(results_path).resolve().parent
+    for base in (Path.cwd(), here, *here.parents):
+        if (base / source).is_file():
+            return base / source
+    return None
 
 
 # ======================================================================================================
@@ -1023,6 +1528,9 @@ def RuleDetails(c):
 SCRIPT = """
 const search = document.getElementById('q');
 const hiddenStatuses = new Set();
+const DATA = JSON.parse(document.getElementById('rules-data').textContent);
+
+// ---- Search, status filters, open/close --------------------------------------------------------------
 
 // Open or close the panel a toggle button points at.
 function setOpen(button, open) {
@@ -1033,12 +1541,14 @@ function setOpen(button, open) {
 // Show a row only if its status is not filtered out and it matches the search text.
 function applyFilters() {
   const text = search.value.trim().toLowerCase();
-  document.querySelectorAll('[data-status]').forEach((row) => {
-    const visible = !hiddenStatuses.has(row.dataset.status) && (!text || row.dataset.text.includes(text));
-    row.hidden = !visible;
-    // The hidden "rule" row that belongs to this row follows it.
-    const detail = row.id && document.querySelector('[data-for="' + row.id + '"]');
-    if (detail) detail.hidden = !visible;
+  document.querySelectorAll('tr[data-status]').forEach((row) => {
+    row.hidden = hiddenStatuses.has(row.dataset.status) || (text && !row.dataset.text.includes(text));
+  });
+  // A group with no visible rows says so instead of showing an empty table.
+  document.querySelectorAll('section[data-group]').forEach((band) => {
+    const any = band.querySelector('tr[data-status]:not([hidden])');
+    band.querySelector('.empty').hidden = !!any;
+    band.querySelector('.tw').hidden = !any;
   });
 }
 
@@ -1059,13 +1569,94 @@ document.addEventListener('click', (event) => {
     else hiddenStatuses.add(status);
     applyFilters();
   }
+
+  const open = event.target.closest('[data-rule]');
+  if (open) openRule(open.dataset.rule);
 });
+
+// ---- Rule panel: read-only -----------------------------------------------------------------------------
+
+const SEVERITY_LABEL = { fail: 'Fail', nice: 'Nice to have' };
+const sheet = document.getElementById('rule-sheet');
+const $ = (id) => document.getElementById(id);
+const EMPTY = { good: [], anti: [], source: '', severity: 'fail' };
+
+// Mimics git's default date format: "Wed Nov 18 21:22:20 2026 +0000"
+function gitDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return 'unknown';
+  const p = (n) => String(n).padStart(2, '0');
+  const off = -d.getTimezoneOffset();
+  const tz = (off >= 0 ? '+' : '-') + p(Math.floor(Math.abs(off) / 60)) + p(Math.abs(off) % 60);
+  return d.toLocaleDateString('en-US', { weekday: 'short' }) + ' ' + d.toLocaleDateString('en-US', { month: 'short' }) + ' ' +
+    d.getDate() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) + ' ' + d.getFullYear() + ' ' + tz;
+}
+
+function el(tag, props, children) {
+  const node = Object.assign(document.createElement(tag), props || {});
+  (children || []).forEach((c) => node.append(c));
+  return node;
+}
+
+function icon(svg) {
+  const t = document.createElement('template');
+  t.innerHTML = svg;
+  return t.content.firstElementChild;
+}
+
+// Last change = commit number (short hash) and subject, then author and date.
+function renderLog() {
+  const last = DATA.log[0];
+  const commit = last ? last.hash.slice(0, 7) + (last.subject ? '  ' + last.subject : '') : 'No history';
+  const log = $('rs-log');
+  log.replaceChildren(
+    el('dt', { textContent: 'Last change' }), el('dd', { textContent: commit, title: commit }),
+    el('dt', { textContent: 'Author' }), el('dd', { textContent: last && last.author ? last.author : 'unknown' }),
+    el('dt', { textContent: 'Date' }), el('dd', { textContent: last && last.date ? gitDate(last.date) : 'unknown' }),
+  );
+}
+
+// Only the severity the rule already has. It cannot be changed here.
+function renderSeverity(rule) {
+  const pill = el('span', { textContent: SEVERITY_LABEL[rule.severity] || rule.severity, className: 'pill' });
+  pill.dataset.sev = rule.severity;
+  $('rs-sev').replaceChildren(pill);
+}
+
+function renderPatterns(kind, rule) {
+  const good = kind === 'good';
+  const list = el('ul');
+  (rule[kind] || []).forEach((text) => list.append(el('li', { textContent: text })));
+  $('rs-' + kind).replaceChildren(el('h3', {}, [icon(good ? ICON_CHECK : ICON_X), good ? 'Good pattern' : 'Anti-pattern']), list);
+}
+
+function openRule(id) {
+  const rule = DATA.rules[id] || EMPTY;
+  $('rs-title').textContent = document.querySelector('[data-rule="' + id + '"]').dataset.title;
+  renderLog();
+  renderSeverity(rule);
+  renderPatterns('good', rule);
+  renderPatterns('anti', rule);
+  sheet.showModal();
+}
+
+$('rs-close').addEventListener('click', () => sheet.close());
+// Clicking the dimmed area outside the panel closes it. Esc is handled by the dialog itself.
+sheet.addEventListener('click', (event) => { if (event.target === sheet) sheet.close(); });
+
+applyFilters();
 """
 
 # ======================================================================================================
 # PAGE: put the components together
 # ======================================================================================================
-STYLES = "\n".join([CSS_TOKENS, CSS_BASE, CSS_HEADER, CSS_SEGMENTS, CSS_HERO, CSS_BOARD, CSS_BAND, CSS_TABLE, CSS_COLLAPSE])
+STYLES = "\n".join([CSS_TOKENS, CSS_BASE, CSS_HEADER, CSS_SEGMENTS, CSS_HERO, CSS_BOARD, CSS_BAND, CSS_TABLE, CSS_COLLAPSE, CSS_SHEET])
+
+
+def script_icons():
+    """The few icons SCRIPT draws itself, as JS constants."""
+    icons = {"ICON_X": ICON_X, "ICON_CHECK": ICON_CHECK}
+    return "".join(f"const {name} = {json.dumps(svg)};\n" for name, svg in icons.items()).replace("</", "<\\/")
 
 
 def Page(data):
@@ -1080,10 +1671,12 @@ def Page(data):
         rows = []
         for c in group["criteria"]:
             i += 1
-            rows.append(CriterionRow(i, c))
+            rows.append(CriterionRow(i, c, data))
         boards.append((index, group["label"], group["criteria"]))
         bands.append(GroupBand(index, group, "".join(rows)))
     project = data.get("project", "")
+    n_all = len(allc)
+    description = f"Hallmark quality review of {project}: {score(allc)}% overall across {n_all} criteria."
     header = Header(project, data.get("rules_source", ""), data.get("evaluated_at", ""), n)
     overview = f"""
         <section class="band hero-band" id="band-0">
@@ -1098,7 +1691,11 @@ def Page(data):
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Kedro quality check: {E(project)}</title>
+  <title>Hallmark quality review: {E(project)}</title>
+  <meta name="description" content="{E(description)}">
+  <meta property="og:title" content="Hallmark quality review: {E(project)}">
+  <meta property="og:description" content="{E(description)}">
+  <meta property="og:type" content="website">
   <style>{STYLES}</style>
 </head>
 <body>
@@ -1107,7 +1704,9 @@ def Page(data):
     {overview}
     {"".join(bands)}
   </main>
-  <script>{SCRIPT}</script>
+  {RuleSheet()}
+  <script type="application/json" id="rules-data">{RulesData(data)}</script>
+  <script>{script_icons()}{SCRIPT}</script>
 </body>
 </html>
 """
@@ -1128,9 +1727,10 @@ def load(path):
     groups = data.get("groups")
     if not isinstance(groups, dict):
         die("'groups' object is missing")
+    GROUPS[:] = [k for k in ALL_GROUPS if k in groups]
+    if not GROUPS:
+        die(f"no known group found; expected one of {ALL_GROUPS}")
     for key in GROUPS:
-        if key not in groups:
-            die(f"group '{key}' is missing")
         if not isinstance(groups[key].get("criteria"), list):
             die(f"group '{key}' has no 'criteria' list")
         for c in groups[key]["criteria"]:
@@ -1140,6 +1740,11 @@ def load(path):
             if c["status"] not in STATUSES:
                 die(f"{c['id']}: status must be one of {STATUSES}, got {c['status']!r}")
             c.setdefault("evidence", [])
+            if c.get("severity") not in (None, "fail", "nice_to_have"):
+                die(f"{c['id']}: severity must be 'fail' or 'nice_to_have', got {c['severity']!r}")
+            # Severity comes from the rules file. nice_to_have means optional: never scored, never failing.
+            if c.get("severity") == "nice_to_have":
+                c["optional"] = True
             # Optional criteria never fail: below 'pass' they show as "Nice to have" and are not scored.
             c["shown"] = "optional" if c.get("optional") and c["status"] != "pass" else c["status"]
     return data
@@ -1161,22 +1766,40 @@ def score(criteria):
 
 
 # ======================================================================================================
-# ASSETS: icons and the Kedro logo (official kedro_logo_black.svg)
+# ASSETS: icons and the Hallmark wordmark
 # ======================================================================================================
 ICON_CHEVRON = ('<svg class="chev" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" '
                 'stroke-linecap="square" stroke-linejoin="miter"><path d="M6 3.5l5 4.5-5 4.5"/></svg>')
+ICON_BOOK = ('<svg class="ic" style="width:14px;height:14px" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5">'
+             '<path d="M2.5 2.5h4a1.5 1.5 0 0 1 1.5 1.5v9.5a1 1 0 0 0-1-1h-4.5zM13.5 2.5h-4A1.5 1.5 0 0 0 8 4v9.5a1 1 0 0 1 1-1h4.5z"/></svg>')
+ICON_CHECK = ('<svg class="ic" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" '
+              'stroke-linecap="square">' + ICONS["pass"] + '</svg>')
+ICON_X = ('<svg class="ic" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" '
+          'stroke-linecap="square">' + ICONS["fail"] + '</svg>')
+ICON_PLUS = ('<svg class="ic" style="width:14px;height:14px" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" '
+             'stroke-width="1.5"><path d="M8 3v10M3 8h10"/></svg>')
+ICON_RESET = ('<svg class="ic" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5">'
+              '<path d="M2.5 8a5.5 5.5 0 1 0 1.8-4.1M2.5 2.5v3h3"/></svg>')
 ICON_SEARCH = ('<svg class="ic" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5">'
                '<circle cx="6.5" cy="6.5" r="4.5"/><path d="M10 10l4.5 4.5"/></svg>')
-LOGO = '<svg role="img" aria-label="Kedro" xmlns="http://www.w3.org/2000/svg" width="124" height="32" class="logo" viewBox="0 0 124 32" fill="none"><path d="M40.1191 27.5487V4.05957H44.295V17.9247L50.0368 11.3673H54.9956L48.373 18.7403L56.0722 27.5487H50.8524L44.295 19.4254V27.5487H40.1191Z" fill="#151515"/><path d="M64.5661 27.9402C62.9349 27.9402 61.4886 27.5922 60.2271 26.8962C58.9657 26.2002 57.9761 25.2215 57.2583 23.9601C56.5406 22.6986 56.1818 21.2414 56.1818 19.5885C56.1818 17.9138 56.5297 16.424 57.2257 15.119C57.9434 13.8141 58.9222 12.8027 60.1619 12.085C61.4233 11.3455 62.9023 10.9758 64.5987 10.9758C66.1864 10.9758 67.5892 11.3238 68.8072 12.0198C70.0251 12.7157 70.9712 13.6727 71.6454 14.8907C72.3414 16.0869 72.6894 17.4244 72.6894 18.9034C72.6894 19.1426 72.6785 19.3927 72.6568 19.6537C72.6568 19.9147 72.6459 20.1866 72.6241 20.4693H60.325C60.412 21.7308 60.847 22.7204 61.6299 23.4381C62.4346 24.1558 63.4025 24.5147 64.5334 24.5147C65.3817 24.5147 66.0885 24.3298 66.654 23.9601C67.2412 23.5686 67.6762 23.0684 67.9589 22.4594H72.2C71.8955 23.4816 71.3844 24.4168 70.6667 25.265C69.9707 26.0915 69.1008 26.744 68.0568 27.2224C67.0346 27.7009 65.871 27.9402 64.5661 27.9402ZM64.5987 14.3687C63.5765 14.3687 62.6739 14.6623 61.8909 15.2495C61.1079 15.815 60.6077 16.685 60.3902 17.8594H68.4483C68.383 16.7937 67.9916 15.9455 67.2738 15.3148C66.5561 14.684 65.6644 14.3687 64.5987 14.3687Z" fill="#151515"/><path d="M82.4979 27.9402C80.9755 27.9402 79.6162 27.5704 78.4199 26.831C77.2237 26.0915 76.2777 25.0801 75.5817 23.7969C74.8857 22.5137 74.5377 21.0566 74.5377 19.4254C74.5377 17.7942 74.8857 16.3479 75.5817 15.0864C76.2777 13.8032 77.2237 12.8027 78.4199 12.085C79.6162 11.3455 80.9755 10.9758 82.4979 10.9758C83.7159 10.9758 84.7816 11.2042 85.695 11.6609C86.6085 12.1176 87.348 12.7592 87.9135 13.5857V4.05957H92.0893V27.5487H88.3702L87.9135 25.2324C87.3915 25.9501 86.6955 26.5808 85.8255 27.1246C84.9773 27.6683 83.8681 27.9402 82.4979 27.9402ZM83.3788 24.2863C84.7272 24.2863 85.8255 23.8404 86.6738 22.9487C87.5437 22.0353 87.9787 20.8717 87.9787 19.458C87.9787 18.0443 87.5437 16.8916 86.6738 15.9999C85.8255 15.0864 84.7272 14.6297 83.3788 14.6297C82.0521 14.6297 80.9537 15.0755 80.0838 15.9672C79.2138 16.859 78.7788 18.0117 78.7788 19.4254C78.7788 20.8391 79.2138 22.0026 80.0838 22.9161C80.9537 23.8296 82.0521 24.2863 83.3788 24.2863Z" fill="#151515"/><path d="M95.6891 27.5487V11.3673H99.4082L99.7997 14.4013C100.387 13.3573 101.181 12.5309 102.181 11.9219C103.203 11.2912 104.4 10.9758 105.77 10.9758V15.38H104.595C103.682 15.38 102.866 15.5214 102.149 15.8041C101.431 16.0869 100.865 16.5762 100.452 17.2722C100.061 17.9682 99.865 18.936 99.865 20.1757V27.5487H95.6891Z" fill="#151515"/><path d="M115.083 27.9402C113.518 27.9402 112.104 27.5813 110.842 26.8636C109.603 26.1459 108.613 25.1563 107.874 23.8948C107.156 22.6116 106.797 21.1327 106.797 19.458C106.797 17.7833 107.167 16.3152 107.906 15.0538C108.646 13.7706 109.635 12.7701 110.875 12.0524C112.136 11.3347 113.55 10.9758 115.116 10.9758C116.66 10.9758 118.052 11.3347 119.292 12.0524C120.553 12.7701 121.543 13.7706 122.261 15.0538C123 16.3152 123.37 17.7833 123.37 19.458C123.37 21.1327 123 22.6116 122.261 23.8948C121.543 25.1563 120.553 26.1459 119.292 26.8636C118.03 27.5813 116.628 27.9402 115.083 27.9402ZM115.083 24.3189C116.171 24.3189 117.117 23.9166 117.922 23.1118C118.726 22.2854 119.129 21.0674 119.129 19.458C119.129 17.8485 118.726 16.6415 117.922 15.8367C117.117 15.0103 116.182 14.597 115.116 14.597C114.007 14.597 113.05 15.0103 112.245 15.8367C111.462 16.6415 111.071 17.8485 111.071 19.458C111.071 21.0674 111.462 22.2854 112.245 23.1118C113.05 23.9166 113.996 24.3189 115.083 24.3189Z" fill="#151515"/><path d="M16 0L32 16L16 32L0 16L16 0Z" fill="#151515"/></svg>'
+LOGO = '<span class="logo" role="img" aria-label="Hallmark" style="font-size:22px;font-weight:600;letter-spacing:-.01em">Hallmark</span>'
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("results")
     ap.add_argument("output")
+    ap.add_argument("--rules", help="rules file whose git history is shown in the rule panel (default: rules_source from the results)")
+    ap.add_argument("--root", default=".", help="project root that evidence paths are relative to (default: current directory)")
+    ap.add_argument("--editor", default="vscode", help="editor URL scheme for file links, e.g. vscode, cursor, idea (default: vscode)")
     ap.add_argument("--open", action="store_true", help="open the dashboard in the default browser")
     args = ap.parse_args()
     data = load(args.results)
+    global ROOT, SCHEME
+    ROOT, SCHEME = Path(args.root).resolve(), args.editor
+    rules_path = find_rules_file(data, args.results, args.rules)
+    data["rules_log"] = git_log(rules_path)
+    data["rule_lines"] = heading_lines(rules_path)
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(Page(data))
