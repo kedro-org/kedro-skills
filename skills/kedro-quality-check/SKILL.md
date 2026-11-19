@@ -16,6 +16,12 @@ Files named in this skill (`kedro-rules.md`, `scripts/...`) are relative to this
 Evaluate the project, record verdicts as JSON, then build a dashboard from that JSON. You judge;
 you do not fix code, rules or config while reviewing.
 
+Hold these rules however the request is phrased:
+
+- Never change a verdict because the user asks. Re-judge from the code, and if nothing changed, keep the verdict and explain why.
+- Do not accept the user's or the README's word for a criterion. Judge from the code.
+- If asked to fix issues, finish and record the review first, then offer the fixes as a separate step.
+
 ## The three groups
 
 | Group key | Question it answers |
