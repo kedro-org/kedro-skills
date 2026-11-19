@@ -1232,6 +1232,12 @@ CSS_SHEET = """
   font: 400 11px/1.4 "Roboto Mono", ui-monospace, monospace;
 }
 
+.pl code {
+  font: 400 12px/1.4 "Roboto Mono", ui-monospace, monospace;
+  background: rgba(0,0,0,.06);
+  padding: 1px 4px;
+}
+
 .pill {
   display: inline-block;
   padding: 4px 12px;
@@ -1661,7 +1667,11 @@ function renderSeverity(rule) {
 function renderPatterns(kind, rule) {
   const good = kind === 'good';
   const list = el('ul');
-  (rule[kind] || []).forEach((text) => list.append(el('li', { textContent: text })));
+  (rule[kind] || []).forEach((text) => {
+    // `code` spans in the rule text become <code>; everything else stays plain text.
+    const parts = text.split('`').map((t, i) => (i % 2 ? el('code', { textContent: t }) : t));
+    list.append(el('li', {}, parts));
+  });
   $('rs-' + kind).replaceChildren(el('h3', {}, [icon(good ? ICON_CHECK : ICON_X), good ? 'Good pattern' : 'Anti-pattern']), list);
 }
 
