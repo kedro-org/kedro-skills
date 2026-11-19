@@ -1,0 +1,68 @@
+# Kedro quality gate (template from the kedro-quality-check skill).
+#
+# Copy to .github/workflows/kedro-quality-gate.yml. On every pull request it
+# runs the gate over the committed review results and posts a summary comment.
+# It does NOT run the review: ask your agent to run kedro-quality-check and
+# commit kedro-quality-check/results.json with the change.
+name: Kedro quality gate
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  # Folder the skill was installed to (always present after `kedro skills install`).
+  SKILL_DIR: .agents/skills/kedro-quality-check
+  RESULTS: kedro-quality-check/results.json
+  MIN_SCORE: "40"
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Require committed results
+        run: |
+          if [ ! -f "$RESULTS" ]; then
+            echo "::error::$RESULTS is missing. Run the kedro-quality-check skill and commit its results."
+            exit 1
+          fi
+
+      - name: Fetch baseline from the target branch
+        run: |
+          mkdir -p baseline
+          if git cat-file -e "origin/${{ github.base_ref }}:$RESULTS" 2>/dev/null; then
+            git show "origin/${{ github.base_ref }}:$RESULTS" > baseline/results.json
+          else
+            echo "No baseline on ${{ github.base_ref }}; skipping regression check."
+          fi
+
+      - name: Run gate
+        id: gate
+        run: |
+          args=(--min-score "$MIN_SCORE" --markdown comment.md)
+          if [ -f baseline/results.json ]; then args+=(--baseline baseline/results.json); fi
+          set +e
+          python3 "$SKILL_DIR/scripts/gate.py" "$RESULTS" "${args[@]}"
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Comment on the pull request
+        if: always() && hashFiles('comment.md') != ''
+        continue-on-error: true # fork PRs get a read-only token
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment "${{ github.event.pull_request.number }}" --body-file comment.md --edit-last --create-if-none
+
+      - name: Fail if the gate failed
+        if: steps.gate.outputs.code != '0'
+        run: exit "${{ steps.gate.outputs.code }}"

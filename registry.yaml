@@ -124,3 +124,19 @@ skills:
       - copilot
       - claude
       - codex
+
+  - id: kedro-quality-check
+    category: quality
+    description: >-
+      Evaluate a Kedro project against the rules in this skill's kedro-rules.md,
+      grouped into functional appropriateness, performance efficiency and
+      maintainability. Writes the verdicts to kedro-quality-check/results.json and
+      builds kedro-quality-check/dashboard.html. Use when asked to review, check, score
+      or audit a Kedro pipeline, evaluate it against kedro-rules.md, or build the
+      quality dashboard.
+    paths: []
+    ide_support:
+      - cursor
+      - copilot
+      - claude
+      - codex

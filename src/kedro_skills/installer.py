@@ -1,4 +1,4 @@
-"""Canonical writer: copies a packaged ``SKILL.md`` into a Kedro project."""
+"""Canonical writer: copies a packaged skill folder into a Kedro project."""
 
 from __future__ import annotations
 
@@ -53,20 +53,30 @@ def _resolve_skill_path(skill_id: str) -> Path:
     )
 
 
-def write_canonical(skill: SkillMetadata, project_root: Path) -> FileRecord:
-    """Copy the packaged ``SKILL.md`` to the project's canonical location.
+def write_canonical(skill: SkillMetadata, project_root: Path) -> list[FileRecord]:
+    """Copy the packaged skill folder to the project's canonical location.
 
-    Writes to ``<project_root>/.agents/skills/<id>/SKILL.md`` and returns
-    a :class:`FileRecord` with the relative path and SHA-256 digest.
+    Writes ``SKILL.md`` and any bundled files (rules, scripts, templates) to
+    ``<project_root>/.agents/skills/<id>/``, keeping the sub-folder layout, and
+    returns a :class:`FileRecord` (relative path and SHA-256 digest) for each.
 
     Pure — does **not** touch ``.installed.json``.
     """
-    source = _resolve_skill_path(skill.id)
-    content = source.read_bytes()
+    source_root = _resolve_skill_path(skill.id).parent
 
-    rel = Path(".agents", "skills", skill.id, "SKILL.md")
-    dest = project_root / rel
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_bytes(content)
-
-    return FileRecord(path=str(rel), sha256=compute_sha256(dest), kind="managed_copy")
+    records: list[FileRecord] = []
+    for source in sorted(source_root.rglob("*")):
+        if not source.is_file() or "__pycache__" in source.parts:
+            continue
+        rel = Path(".agents", "skills", skill.id, source.relative_to(source_root))
+        dest = project_root / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(source.read_bytes())
+        records.append(
+            FileRecord(
+                path=rel.as_posix(),
+                sha256=compute_sha256(dest),
+                kind="managed_copy",
+            )
+        )
+    return records

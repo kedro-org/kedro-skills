@@ -36,6 +36,7 @@ Outside a Kedro project, the commands use the current directory instead.
 | `kedro-deploy-databricks` | `databricks.yml`, `resources/*.yml`, `conf/**/databricks*.yml`, `conf/**/databricks/**/*.yml`, `.github/workflows/*databricks*.yml` (and `.yaml`) | Deploying to Databricks: choosing a path, packaging, conf and environments, volumes, secrets, nodes to tasks, checking before deploying |
 | `kedro-explain-project` | `src/**/pipeline_registry.py`, `src/**/settings.py` | Explaining an existing project: pipelines, data flow, catalog, configuration and Kedro-Viz |
 | `kedro-llm-context-nodes` | `src/**/pipelines/**/*.py` | The `llm_context_node` API for composing LLMs, prompts and tools |
+| `kedro-quality-check` | Requests to review or audit a Kedro project | Pass, mixed or fail verdicts per best-practice criterion, with file evidence |
 | `kedro-parameters-and-config` | `conf/**/parameters*.yml` and `conf/**/credentials*.yml` | Parameters, credentials, configuration interpolation and runtime overrides. |
 | `kedro-testing-pipelines` | `tests/**/*.py` | Node unit tests, in-memory pipeline tests and `KedroSession` smoke tests |
 

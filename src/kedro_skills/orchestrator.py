@@ -208,8 +208,7 @@ def install_skill(
     for old_id in old_ids:
         uninstall_skill(old_id, project_root, force=True)
 
-    canonical_record = write_canonical(skill, project_root)
-    all_records: list[FileRecord] = [canonical_record]
+    all_records: list[FileRecord] = write_canonical(skill, project_root)
     all_records.extend(_dispatch_renderers(skill, project_root, ides))
 
     installed = state.read(project_root)

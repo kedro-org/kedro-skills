@@ -1,4 +1,4 @@
-"""Claude renderer: copies the canonical ``SKILL.md`` to ``.claude/skills/``."""
+"""Claude renderer: copies the canonical skill folder to ``.claude/skills/``."""
 
 from __future__ import annotations
 
@@ -13,7 +13,8 @@ if TYPE_CHECKING:
 
 
 def render(skill: SkillMetadata, project_root: Path) -> list[FileRecord]:
-    """Copy the canonical ``SKILL.md`` byte-for-byte to ``.claude/skills/<id>/SKILL.md``.
+    """Copy the canonical skill folder byte-for-byte to ``.claude/skills/<id>/``.
+    That is ``SKILL.md`` plus any rules, scripts or templates bundled with it.
 
     Claude activates the skill from its ``description`` frontmatter rather than
     from globs.  A ``paths:`` key would scope activation, but it also withholds
@@ -22,8 +23,7 @@ def render(skill: SkillMetadata, project_root: Path) -> list[FileRecord]:
 
     Raises :class:`FileNotFoundError` if the canonical file does not exist.
 
-    Returns a single-element list with a :class:`FileRecord` using
-    ``kind="managed_copy"``.
+    Returns one :class:`FileRecord` per file with ``kind="managed_copy"``.
     """
     canonical = project_root / ".agents" / "skills" / skill.id / "SKILL.md"
     if not canonical.is_file():
@@ -32,15 +32,15 @@ def render(skill: SkillMetadata, project_root: Path) -> list[FileRecord]:
             f"Run write_canonical() for {skill.id!r} first."
         )
 
-    rel = f".claude/skills/{skill.id}/SKILL.md"
-    dest = project_root / rel
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_bytes(canonical.read_bytes())
-
-    return [
-        FileRecord(
-            path=rel,
-            sha256=compute_sha256(dest),
-            kind="managed_copy",
+    records: list[FileRecord] = []
+    for source in sorted(canonical.parent.rglob("*")):
+        if not source.is_file():
+            continue
+        rel = f".claude/skills/{skill.id}/{source.relative_to(canonical.parent).as_posix()}"
+        dest = project_root / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(source.read_bytes())
+        records.append(
+            FileRecord(path=rel, sha256=compute_sha256(dest), kind="managed_copy")
         )
-    ]
+    return records
