@@ -1550,14 +1550,14 @@ def rule_sections(rules_file):
 
 
 def find_rules_file(data, results_path, explicit):
-    """--rules wins. Otherwise try rules_source from results.json next to the results file, then up the tree."""
+    """--rules wins. Otherwise look for rules_source in the project (cwd, the results file's folder and its
+    parents), then in this skill's own folder, which is where the default kedro-rules.md ships."""
     if explicit:
         return Path(explicit)
-    source = data.get("rules_source")
-    if not source:
-        return None
+    source = data.get("rules_source") or "kedro-rules.md"
     here = Path(results_path).resolve().parent
-    for base in (Path.cwd(), here, *here.parents):
+    skill = Path(__file__).resolve().parent.parent
+    for base in (Path.cwd(), here, *here.parents, skill):
         if (base / source).is_file():
             return base / source
     return None
