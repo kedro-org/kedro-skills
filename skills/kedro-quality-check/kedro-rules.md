@@ -37,9 +37,11 @@ Behaviour can change without code changes, and each environment gets the right s
  
 - Tunables live in `parameters.yml` and are passed as `params:xxx`.
 - `conf/base` holds defaults, and `conf/local` or named envs (`dev`, `prod`) hold overrides.
-- Environment-specific values come from `oc.env` or `globals`.
+- Environment-specific values come from `globals` or from per-environment overrides in `conf/<env>`.
+- `oc.env` is only valid in `credentials.yml`. `OmegaConfigLoader` enables it for the `credentials` key only, so use `${oc.env:VAR}` there and nowhere else.
 **Anti-pattern**
  
+- `${oc.env:...}` in `parameters.yml` or `catalog.yml`. It raises `UnsupportedInterpolationType` (checked on Kedro 1.7.0 and 1.8.0), so do not flag its absence and do not recommend it.
 - Magic numbers, thresholds or column lists in code.
 - Copy-pasted config per environment.
 - Editing `base` to switch environments.
