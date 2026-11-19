@@ -1,5 +1,8 @@
 # Upcoming Release
 
+## Major features and improvements
+- Added a skill evaluation harness in `evals/` (promptfoo, not packaged): each task runs with and without the skill, graded by code-block checks and an LLM judge. Includes a suite for `kedro-parameters-and-config` and `make eval`, `make eval-skill`, `make eval-config` and `make eval-test` targets.
+
 # Release 0.3.0
 
 ## Major features and improvements
