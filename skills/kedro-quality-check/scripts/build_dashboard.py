@@ -875,8 +875,8 @@ def DefinedIn(data, c):
     href = rule_href(data, c)
     if not href:
         return ""
-    label = f'{Path(data["rules_source"]).name}:{rule_line(data, c)}'
-    return f'<div class="def"><a class="loc" href="{E(href)}" title="Open the rule in the editor">{E(label)}</a></div>'
+    label = f'{rule_file_label(data)}:{rule_line(data, c)}'
+    return f'<div class="def">Defined in <a class="loc" href="{E(href)}" title="Open the rule in the editor">{E(label)}</a></div>'
 
 
 def CriterionRow(i, c, data):
@@ -1227,7 +1227,7 @@ CSS_SHEET = """
 }
 
 .def {
-  margin: 0 0 -8px;
+  margin: 4px 0 0;
   color: var(--ink2);
   font: 400 11px/1.4 "Roboto Mono", ui-monospace, monospace;
 }
@@ -1435,14 +1435,24 @@ def rule_line(data, c):
     return data.get("rule_lines", {}).get(c["title"])
 
 
+def rule_file_label(data):
+    """The rules file as shown to the reader: relative to the project root when possible, else its name."""
+    path = Path(data.get("rules_path") or data.get("rules_source") or "")
+    try:
+        return str(path.resolve().relative_to(ROOT))
+    except ValueError:
+        return path.name
+
+
 def rule_ref(data, c):
     line = rule_line(data, c)
-    return f'{data.get("rules_source", "")}:{line}' if line else ""
+    return f'{rule_file_label(data)}:{line}' if line else ""
 
 
 def rule_href(data, c):
     line = rule_line(data, c)
-    return code_href(data["rules_source"], line) if line and data.get("rules_source") else ""
+    target = data.get("rules_path") or data.get("rules_source")
+    return code_href(str(target), line) if line and target else ""
 
 
 def RulesData(data):
@@ -1450,10 +1460,12 @@ def RulesData(data):
     rules = {}
     for k in GROUPS:
         for c in data["groups"][k]["criteria"]:
+            # Patterns come from the rules file itself. results.json may override them with a "rule" object.
             r = c.get("rule") if isinstance(c.get("rule"), dict) else {}
+            text = data.get("rule_text", {}).get(c["title"], {})
             rules[c["id"]] = {
-                "good": as_list(r.get("good")),
-                "anti": as_list(r.get("anti")),
+                "good": as_list(r.get("good")) or text.get("good", []),
+                "anti": as_list(r.get("anti")) or text.get("anti", []),
                 "source": c.get("source", ""),
                 "severity": "nice" if c.get("optional") else "fail",
             }
@@ -1506,6 +1518,29 @@ def heading_lines(rules_file):
         return {}
     lines = Path(rules_file).read_text().splitlines()
     return {line[3:].strip(): n for n, line in enumerate(lines, start=1) if line.startswith("## ")}
+
+
+def rule_sections(rules_file):
+    """Good and anti-pattern bullets of each "## title" section in the rules file, read at build time."""
+    if not rules_file or not Path(rules_file).is_file():
+        return {}
+    sections, title, kind = {}, None, None
+    for raw in Path(rules_file).read_text().splitlines():
+        line = raw.strip()
+        if raw.startswith("## "):
+            title, kind = raw[3:].strip(), None
+            sections[title] = {"good": [], "anti": []}
+        elif title is None:
+            continue
+        elif line.lower().strip("*: ").startswith("good pattern"):
+            kind = "good"
+        elif line.lower().strip("*: ").startswith("anti-pattern") or line.lower().strip("*: ").startswith("anti pattern"):
+            kind = "anti"
+        elif kind and line.startswith(("- ", "* ")):
+            sections[title][kind].append(line[2:].strip())
+        elif kind and line and sections[title][kind]:
+            sections[title][kind][-1] += " " + line  # wrapped bullet
+    return sections
 
 
 def find_rules_file(data, results_path, explicit):
@@ -1800,6 +1835,9 @@ def main():
     rules_path = find_rules_file(data, args.results, args.rules)
     data["rules_log"] = git_log(rules_path)
     data["rule_lines"] = heading_lines(rules_path)
+    data["rule_text"] = rule_sections(rules_path)
+    if rules_path:
+        data["rules_path"] = str(rules_path.resolve())
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(Page(data))
