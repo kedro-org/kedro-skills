@@ -126,6 +126,15 @@ installs to the new id.
 
 5. See the [Agent Skills standard](https://agentskills.io/) for the full spec.
 
+### Evaluating a skill
+
+`evals/` holds a promptfoo harness that checks whether models follow a skill.
+Each task runs with the skill in the prompt and without it, so the results show
+what the skill changes. To add a suite for a new skill, follow
+[`evals/README.md`](evals/README.md). `make eval-test` runs the harness's own
+unit tests with no API calls; `make eval-skill SKILL=<id>` runs one suite and
+needs Node >= 22.22 and model API keys.
+
 ## Releasing
 
 1. Create a release branch:
